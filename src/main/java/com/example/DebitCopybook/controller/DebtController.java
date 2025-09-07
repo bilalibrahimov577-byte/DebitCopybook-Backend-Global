@@ -13,7 +13,13 @@ import org.springframework.web.bind.annotation.*;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import java.math.BigDecimal;
 import java.util.List;
+import org.springframework.validation.annotation.Validated;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 
+
+
+@Validated
 @SecurityRequirement(name = "X-API-KEY")
 @RequiredArgsConstructor
 @RestController
@@ -40,15 +46,15 @@ public class DebtController {
         return debtService.getDebtById(id);
     }
 
-    @Operation(summary = "Bütün borcları qaytar")
+    @Operation(summary = "Bütün borcları göstər")
     @GetMapping("/findAllDebts")
     public ResponseEntity<List<DebtResponseDto>> getAllDebts() {
         List<DebtResponseDto> debts = debtService.getAllDebts();
         return ResponseEntity.ok(debts);
     }
 
-    @Operation(summary = "Borcu yenilə")
-    @PutMapping("/updateDebt/{id}")
+    @PatchMapping("/updateDebt/{id}")
+    @Operation(summary = "Borcu barədə məlumatları dəyiş")
     @ResponseStatus(HttpStatus.OK)
     public DebtResponseDto updateDebt(@PathVariable Long id,
                                       @Valid @RequestBody DebtRequestDto debtRequestDto) {
@@ -73,8 +79,13 @@ public class DebtController {
     @Operation(summary = "İl və aya görə borcları tap")
     @GetMapping("/findByYearAndMonth")
     public ResponseEntity<List<DebtResponseDto>> getDebtsByYearAndMonth(
-            @RequestParam Integer year,
-            @RequestParam Integer month) {
+            @RequestParam @Min(value = 2024, message = "İl 2024 və 2060 arasında olmalıdır")
+            @Max(value = 2060, message = "İl 2024 və 2060 arasında olmalıdır")
+            Integer year,
+
+            @RequestParam @Min(value = 1, message = "Ay 1 və 12 arasında olmalıdır")
+            @Max(value = 12, message = "Ay 1 və 12 arasında olmalıdır")
+            Integer month) {
         List<DebtResponseDto> debts = debtService.getDebtsByYearAndMonth(year, month);
         return ResponseEntity.ok(debts);
     }

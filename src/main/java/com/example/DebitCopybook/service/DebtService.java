@@ -46,26 +46,7 @@ public class DebtService {
         return debtMapper.mapEntityToResponseDto(debtEntity);
     }
 
-    @Transactional
-    public DebtResponseDto updateDebt(Long id, DebtRequestDto requestDto) {
-        DebtEntity existingEntity = debtRepository.findById(id)
-                .orElseThrow(() -> new DebtNotFoundException("Borc ID " + id + " ilə tapılmadı."));
 
-
-        if (requestDto.getIsFlexibleDueDate() != null && requestDto.getIsFlexibleDueDate()) {
-            requestDto.setDueYear(null);
-            requestDto.setDueMonth(null);
-        } else if (requestDto.getIsFlexibleDueDate() != null && !requestDto.getIsFlexibleDueDate()){
-
-            if (requestDto.getDueYear() == null || requestDto.getDueMonth() == null) {
-                throw new IllegalArgumentException("Konkret tarix üçün il və ay qeyd olunmalıdır.");
-            }
-        }
-
-        debtMapper.updateEntityFromRequestDto(requestDto, existingEntity);
-        DebtEntity updatedEntity = debtRepository.save(existingEntity);
-        return debtMapper.mapEntityToResponseDto(updatedEntity);
-    }
 
     @Transactional
     public DebtResponseDto makePayment(Long id, BigDecimal paymentAmount) {
@@ -130,6 +111,63 @@ public class DebtService {
         List<DebtEntity> debtEntities = debtRepository.findByDebtorNameContainingIgnoreCase(debtorName);
         return debtMapper.mapEntityListToResponseDtoList(debtEntities);
     }
+
+    @Transactional
+    public DebtResponseDto updateDebt(Long id, DebtRequestDto requestDto) {
+
+        DebtEntity existingEntity = debtRepository.findById(id)
+                .orElseThrow(() -> new DebtNotFoundException("Borc ID " + id + " ilə tapılmadı."));
+
+
+        if (requestDto.getDebtorName() != null && !requestDto.getDebtorName().isBlank()) {
+            existingEntity.setDebtorName(requestDto.getDebtorName());
+        }
+        if (requestDto.getDescription() != null) {
+            existingEntity.setDescription(requestDto.getDescription());
+        }
+        if (requestDto.getDebtAmount() != null) {
+            existingEntity.setDebtAmount(requestDto.getDebtAmount());
+        }
+        if (requestDto.getNotes() != null) {
+            existingEntity.setNotes(requestDto.getNotes());
+        }
+
+
+        if (requestDto.getIsFlexibleDueDate() != null) {
+
+            if (requestDto.getIsFlexibleDueDate()) {
+                existingEntity.setIsFlexibleDueDate(true);
+                existingEntity.setDueYear(null);
+                existingEntity.setDueMonth(null);
+            }
+
+            else {
+                if (requestDto.getDueYear() == null || requestDto.getDueMonth() == null) {
+                    throw new IllegalArgumentException("Konkret tarixə keçmək üçün il və ay qeyd olunmalıdır.");
+                }
+                existingEntity.setIsFlexibleDueDate(false);
+                existingEntity.setDueYear(requestDto.getDueYear());
+                existingEntity.setDueMonth(requestDto.getDueMonth());
+            }
+        }
+
+        else {
+
+            if (requestDto.getDueYear() != null) {
+                existingEntity.setDueYear(requestDto.getDueYear());
+            }
+            if (requestDto.getDueMonth() != null) {
+                existingEntity.setDueMonth(requestDto.getDueMonth());
+            }
+        }
+
+
+        DebtEntity updatedEntity = debtRepository.save(existingEntity);
+
+
+        return debtMapper.mapEntityToResponseDto(updatedEntity);
+    }
+
 
 
 }

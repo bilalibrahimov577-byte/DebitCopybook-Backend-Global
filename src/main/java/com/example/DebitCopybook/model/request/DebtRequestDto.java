@@ -21,7 +21,7 @@ public class DebtRequestDto {
 
     @Schema(description = "Borcalanla bağlı 500 simvoldan ibarət təsvir daxil edə bilərsiz " +
             "məsələn Həsən müəllim nəyə görə borcu yaranıbsa onu yazın")
-    @Size(min =1, max = 500)
+    @Size( max = 500)
     private String description;
     @NotNull(message = "borcun məbləği boş ola bilməz təxmini də olsa məbləğ yazılmalıdır")
     private BigDecimal debtAmount;
@@ -42,19 +42,20 @@ public class DebtRequestDto {
     private Boolean isFlexibleDueDate;
 
     @Schema(description = "Əgər xüsusi bir qeyd etmək istəyirsizsə yazın məsələn oğlu Rusiyadan gəlib borcu ödəyəcək")
+    @Size( max = 500)
     private String notes;
 
 
-    @AssertTrue(message = "Ya il və ay daxil edilməli, ya da pulum olanda seçilməlidir, ikisi də eyni anda ola bilməz.")
-    private boolean isValidDueDateConfiguration() {
-        if (isFlexibleDueDate != null && isFlexibleDueDate) {
-
-            return dueYear == null && dueMonth == null;
-        } else {
-
-            return dueYear != null && dueMonth != null;
-        }
-    }
+//    @AssertTrue(message = "Ya il və ay daxil edilməli, ya da pulum olanda seçilməlidir, ikisi də eyni anda ola bilməz.")
+//    private boolean isValidDueDateConfiguration() {
+//        if (isFlexibleDueDate != null && isFlexibleDueDate) {
+//
+//            return dueYear == null && dueMonth == null;
+//        } else {
+//
+//            return dueYear != null && dueMonth != null;
+//        }
+//    }
 
 
 
