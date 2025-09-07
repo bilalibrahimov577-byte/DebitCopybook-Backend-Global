@@ -1,26 +1,38 @@
-# Java 21 olan hazır bir mühit götürürük
-FROM eclipse-temurin:21-jre-jammy
+# --- STAGE 1: Build ---
+# JDK olan bir mühit götürürük və ona "builder" adını veririk
+FROM eclipse-temurin:21-jdk-jammy AS builder
 
-# Qutunun içində /app adlı bir iş qovluğu yaradırıq
+# İş qovluğunu təyin edirik
 WORKDIR /app
 
-# Əvvəlcə build üçün lazım olan faylları kopyalayırıq
+# Gradle fayllarını kopyalayırıq
 COPY gradlew .
 COPY gradle gradle
 COPY build.gradle .
 COPY settings.gradle .
 
-# gradlew faylına icra icazəsi veririk
+# İcra icazəsi veririk
 RUN chmod +x ./gradlew
 
-# Bütün qalan proyekt fayllarını kopyalayırıq
+# Proyektin mənbə kodunu kopyalayırıq
 COPY src src
 
-# Proqramı build edirik (testləri buraxırıq)
+# Proqramı build edirik (bu dəfə JDK olduğu üçün işləyəcək)
 RUN ./gradlew build -x test
 
-# Proqramın 8080 portunda işlədiyini bildiririk
+# --- STAGE 2: Run ---
+# İndi daha kiçik, JRE olan bir mühit götürürük
+FROM eclipse-temurin:21-jre-jammy
+
+# İş qovluğunu təyin edirik
+WORKDIR /app
+
+# ƏN VACİB HİSSƏ: "builder" adlı birinci mühitdən
+# build olunmuş .jar faylını bu yeni mühitə kopyalayırıq
+COPY --from=builder /app/build/libs/*.jar app.jar
+
+# Proqramın işləyəcəyi portu bildiririk
 EXPOSE 8080
 
-# Və ən sonda, proqramı işə salmaq üçün əmri veririk
-ENTRYPOINT ["java","-jar","build/libs/DebitCopybook-0.0.1-SNAPSHOT.jar"]
+# Proqramı işə salırıq
+ENTRYPOINT ["java","-jar","app.jar"]
