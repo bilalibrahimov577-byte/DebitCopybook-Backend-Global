@@ -1,0 +1,97 @@
+package com.example.DebitCopybook.controller; // Paketi öz proyektinin adına uyğun dəyişdir
+
+import com.example.DebitCopybook.model.request.DebtRequestDto;
+import com.example.DebitCopybook.model.response.DebtResponseDto;
+import com.example.DebitCopybook.service.DebtService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.math.BigDecimal;
+import java.util.List;
+
+@RequiredArgsConstructor
+@RestController
+@RequestMapping("api/v1/debts")
+@Tag(
+        name = "Borc Controller",
+        description = "Borcların yaradılması, əldə edilməsi, yenilənməsi, ödənişi və silinməsi üçün son nöqtələr"
+)
+public class DebtController {
+    private final DebtService debtService;
+
+    @Operation(summary = "Yeni borc yarat")
+    @PostMapping
+    public ResponseEntity<DebtResponseDto> createDebt(
+            @Valid @RequestBody DebtRequestDto debtRequestDto) {
+        DebtResponseDto createdDebt =
+                debtService.createDebt(debtRequestDto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(createdDebt);
+    }
+
+    @Operation(summary = "ID-yə görə borcu tap")
+    @GetMapping("/findDebtById/{id}")
+    public DebtResponseDto getDebtById(@PathVariable("id") Long id) {
+        return debtService.getDebtById(id);
+    }
+
+    @Operation(summary = "Bütün borcları qaytar")
+    @GetMapping("/findAllDebts")
+    public ResponseEntity<List<DebtResponseDto>> getAllDebts() {
+        List<DebtResponseDto> debts = debtService.getAllDebts();
+        return ResponseEntity.ok(debts);
+    }
+
+    @Operation(summary = "Borcu yenilə")
+    @PutMapping("/updateDebt/{id}")
+    @ResponseStatus(HttpStatus.OK)
+    public DebtResponseDto updateDebt(@PathVariable Long id,
+                                      @Valid @RequestBody DebtRequestDto debtRequestDto) {
+        return debtService.updateDebt(id, debtRequestDto);
+    }
+
+    @Operation(summary = "Borca ödəniş et")
+    @PatchMapping("/payDebt/{id}")
+    @ResponseStatus(HttpStatus.OK)
+    public DebtResponseDto makePayment(@PathVariable Long id,
+                                       @RequestParam BigDecimal amount) {
+        return debtService.makePayment(id, amount);
+    }
+
+    @Operation(summary = "Borcu sil")
+    @DeleteMapping("/deleteDebt/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteDebt(@PathVariable Long id) {
+        debtService.deleteDebt(id);
+    }
+
+    @Operation(summary = "İl və aya görə borcları tap")
+    @GetMapping("/findByYearAndMonth")
+    public ResponseEntity<List<DebtResponseDto>> getDebtsByYearAndMonth(
+            @RequestParam Integer year,
+            @RequestParam Integer month) {
+        List<DebtResponseDto> debts = debtService.getDebtsByYearAndMonth(year, month);
+        return ResponseEntity.ok(debts);
+    }
+
+    @Operation(summary = "'Pulum olanda' borclarını tap")
+    @GetMapping("/findFlexibleDebts")
+    public ResponseEntity<List<DebtResponseDto>> getFlexibleDueDateDebts() {
+        List<DebtResponseDto> debts = debtService.getFlexibleDueDateDebts();
+        return ResponseEntity.ok(debts);
+    }
+
+
+    @Operation(summary = "Borcalanın adına görə borcları axtar")
+    @GetMapping("/searchByDebtorName")
+    public ResponseEntity<List<DebtResponseDto>> searchDebtsByDebtorName(
+            @RequestParam String debtorName) {
+        List<DebtResponseDto> debts = debtService.searchDebtsByDebtorName(debtorName);
+        return ResponseEntity.ok(debts);
+    }
+
+}
