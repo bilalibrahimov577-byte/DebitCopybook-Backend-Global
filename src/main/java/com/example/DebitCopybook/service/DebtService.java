@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -24,6 +25,15 @@ public class DebtService {
 
     @Transactional
     public DebtResponseDto createDebt(DebtRequestDto requestDto) {
+
+
+        Optional<DebtEntity> existingDebt = debtRepository.findByDebtorNameIgnoreCase(requestDto.getDebtorName());
+
+
+        if (existingDebt.isPresent()) {
+            throw new IllegalArgumentException("'" + requestDto.getDebtorName() + "' adlı borcalan artıq siyahıda mövcuddur. Yeni borc əlavə etmək üçün 'Borcu Artır' funksiyasından istifadə edin.");
+        }
+
 
         if (requestDto.getIsFlexibleDueDate() != null && requestDto.getIsFlexibleDueDate()) {
             requestDto.setDueYear(null);
@@ -169,5 +179,28 @@ public class DebtService {
     }
 
 
+
+    @Transactional
+    public DebtResponseDto increaseDebt(Long id, BigDecimal amountToAdd) {
+
+        if (amountToAdd == null || amountToAdd.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Əlavə olunacaq məbləğ müsbət olmalıdır.");
+        }
+
+
+        DebtEntity existingEntity = debtRepository.findById(id)
+                .orElseThrow(() -> new DebtNotFoundException("Borc ID " + id + " ilə tapılmadı."));
+
+
+        BigDecimal currentDebt = existingEntity.getDebtAmount();
+        BigDecimal newDebtAmount = currentDebt.add(amountToAdd);
+        existingEntity.setDebtAmount(newDebtAmount);
+
+
+        DebtEntity updatedEntity = debtRepository.save(existingEntity);
+
+
+        return debtMapper.mapEntityToResponseDto(updatedEntity);
+    }
 
 }

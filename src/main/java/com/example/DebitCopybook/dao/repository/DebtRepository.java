@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface DebtRepository extends JpaRepository<DebtEntity, Long> {
@@ -17,4 +18,6 @@ public interface DebtRepository extends JpaRepository<DebtEntity, Long> {
     List<DebtEntity> findByIsFlexibleDueDateTrueOrderByIdAsc();
 
     List<DebtEntity> findByDebtorNameContainingIgnoreCase(String debtorName);
+
+    Optional<DebtEntity> findByDebtorNameIgnoreCase(String debtorName);
 }

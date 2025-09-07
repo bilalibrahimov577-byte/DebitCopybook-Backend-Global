@@ -106,4 +106,13 @@ public class DebtController {
         return ResponseEntity.ok(debts);
     }
 
+
+    @Operation(summary = "Mövcud borcun məbləğini artır")
+    @PatchMapping("/increaseDebt/{id}")
+    @ResponseStatus(HttpStatus.OK)
+    public DebtResponseDto increaseDebt(
+            @PathVariable Long id,
+            @RequestParam BigDecimal amount) {
+        return debtService.increaseDebt(id, amount);
+    }
 }
