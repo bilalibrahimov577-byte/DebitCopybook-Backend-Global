@@ -34,6 +34,10 @@ public class DebtService {
             throw new IllegalArgumentException("'" + requestDto.getDebtorName() + "' adlı borcalan artıq siyahıda mövcuddur. Yeni borc əlavə etmək üçün 'Borcu Artır' funksiyasından istifadə edin.");
         }
 
+        if (requestDto.getDebtAmount().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Borc məbləği 0 manatdan çox olmalıdır.");
+        }
+
 
         if (requestDto.getIsFlexibleDueDate() != null && requestDto.getIsFlexibleDueDate()) {
             requestDto.setDueYear(null);
@@ -137,6 +141,9 @@ public class DebtService {
         }
         if (requestDto.getDebtAmount() != null) {
             existingEntity.setDebtAmount(requestDto.getDebtAmount());
+            if (requestDto.getDebtAmount().compareTo(BigDecimal.ZERO) <= 0) {
+                throw new IllegalArgumentException("Borc məbləği 0 manatdan çox olmalıdır.");
+            }
         }
         if (requestDto.getNotes() != null) {
             existingEntity.setNotes(requestDto.getNotes());
