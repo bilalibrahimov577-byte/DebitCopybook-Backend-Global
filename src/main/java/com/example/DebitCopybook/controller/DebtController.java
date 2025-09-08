@@ -115,4 +115,7 @@ public class DebtController {
             @RequestParam BigDecimal amount) {
         return debtService.increaseDebt(id, amount);
     }
+
+
+
 }
