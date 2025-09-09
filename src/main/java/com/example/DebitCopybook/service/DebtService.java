@@ -65,7 +65,7 @@ public class DebtService {
 
         if (existingDebt.isPresent()) {
 
-            throw new IllegalArgumentException("'" + trimmedName + "' adlı borcalan artıq sənin siyahında mövcuddur. Yeni borc əlavə etmək üçün 'Borcu Artır' funksiyasından istifadə edin.");
+            throw new IllegalArgumentException("'" + trimmedName + "' adlı borcalan artıq bu siyahıda mövcuddur. Zəhmət olmasa yeni borc əlavə etmək üçün 'Borcu Artır' funksiyasından istifadə edin.");
         }
 
         if (requestDto.getDebtAmount().compareTo(BigDecimal.ZERO) <= 0) {
@@ -239,7 +239,7 @@ public class DebtService {
 
 
             if (anotherDebtWithSameName.isPresent() && !anotherDebtWithSameName.get().getId().equals(id)) {
-                throw new IllegalArgumentException("'" + trimmedName + "' adlı borcalan artıq mövcuddur.");
+                throw new IllegalArgumentException("'" + trimmedName + "' adlı borcalan artıq mövcuddur. Onun adını siayhıdan tapib borcu artıra bilərsiz");
             }
 
             existingEntity.setDebtorName(trimmedName);
