@@ -65,7 +65,7 @@ public class DebtService {
 
         if (existingDebt.isPresent()) {
 
-            throw new IllegalArgumentException("'" + trimmedName + "' adlı borcalan artıq siyahıda mövcuddur. Yeni borc əlavə etmək üçün 'Borcu Artır' funksiyasından istifadə edin.");
+            throw new IllegalArgumentException("'" + trimmedName + "' adlı borcalan artıq sənin siyahında mövcuddur. Yeni borc əlavə etmək üçün 'Borcu Artır' funksiyasından istifadə edin.");
         }
 
         if (requestDto.getDebtAmount().compareTo(BigDecimal.ZERO) <= 0) {
