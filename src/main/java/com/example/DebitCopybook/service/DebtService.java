@@ -23,36 +23,73 @@ public class DebtService {
 
 
 
+//    @Transactional
+//    public DebtResponseDto createDebt(DebtRequestDto requestDto) {
+//
+//
+//        Optional<DebtEntity> existingDebt = debtRepository.findByDebtorNameIgnoreCase(requestDto.getDebtorName());
+//
+//
+//        if (existingDebt.isPresent()) {
+//            throw new IllegalArgumentException("'" + requestDto.getDebtorName() + "' adlı borcalan artıq siyahıda mövcuddur. Yeni borc əlavə etmək üçün 'Borcu Artır' funksiyasından istifadə edin.");
+//        }
+//
+//        if (requestDto.getDebtAmount().compareTo(BigDecimal.ZERO) <= 0) {
+//            throw new IllegalArgumentException("Borc məbləği 0 manatdan çox olmalıdır.");
+//        }
+//
+//
+//        if (requestDto.getIsFlexibleDueDate() != null && requestDto.getIsFlexibleDueDate()) {
+//            requestDto.setDueYear(null);
+//            requestDto.setDueMonth(null);
+//        }
+//
+//        DebtEntity debtEntity = debtMapper.mapRequestDtoToEntity(requestDto);
+//        DebtEntity savedEntity = debtRepository.save(debtEntity);
+//        return debtMapper.mapEntityToResponseDto(savedEntity);
+//    }
+//
+//    public List<DebtResponseDto> getAllDebts() {
+//        List<DebtEntity> debtEntities = debtRepository.findAll();
+//        return debtMapper.mapEntityListToResponseDtoList(debtEntities);
+//    }
+
     @Transactional
     public DebtResponseDto createDebt(DebtRequestDto requestDto) {
 
 
-        Optional<DebtEntity> existingDebt = debtRepository.findByDebtorNameIgnoreCase(requestDto.getDebtorName());
+        String trimmedName = requestDto.getDebtorName().trim();
 
+
+        Optional<DebtEntity> existingDebt = debtRepository.findByDebtorNameIgnoreCase(trimmedName);
 
         if (existingDebt.isPresent()) {
-            throw new IllegalArgumentException("'" + requestDto.getDebtorName() + "' adlı borcalan artıq siyahıda mövcuddur. Yeni borc əlavə etmək üçün 'Borcu Artır' funksiyasından istifadə edin.");
+
+            throw new IllegalArgumentException("'" + trimmedName + "' adlı borcalan artıq siyahıda mövcuddur. Yeni borc əlavə etmək üçün 'Borcu Artır' funksiyasından istifadə edin.");
         }
 
         if (requestDto.getDebtAmount().compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("Borc məbləği 0 manatdan çox olmalıdır.");
         }
 
-
         if (requestDto.getIsFlexibleDueDate() != null && requestDto.getIsFlexibleDueDate()) {
             requestDto.setDueYear(null);
             requestDto.setDueMonth(null);
         }
+
+
+        requestDto.setDebtorName(trimmedName);
 
         DebtEntity debtEntity = debtMapper.mapRequestDtoToEntity(requestDto);
         DebtEntity savedEntity = debtRepository.save(debtEntity);
         return debtMapper.mapEntityToResponseDto(savedEntity);
     }
 
-    public List<DebtResponseDto> getAllDebts() {
-        List<DebtEntity> debtEntities = debtRepository.findAll();
-        return debtMapper.mapEntityListToResponseDtoList(debtEntities);
-    }
+
+
+
+
+
 
     public DebtResponseDto getDebtById(Long id) {
         DebtEntity debtEntity = debtRepository.findById(id)
@@ -126,6 +163,66 @@ public class DebtService {
         return debtMapper.mapEntityListToResponseDtoList(debtEntities);
     }
 
+//    @Transactional
+//    public DebtResponseDto updateDebt(Long id, DebtRequestDto requestDto) {
+//
+//        DebtEntity existingEntity = debtRepository.findById(id)
+//                .orElseThrow(() -> new DebtNotFoundException("Borc ID " + id + " ilə tapılmadı."));
+//
+//
+//        if (requestDto.getDebtorName() != null && !requestDto.getDebtorName().isBlank()) {
+//            existingEntity.setDebtorName(requestDto.getDebtorName());
+//        }
+//        if (requestDto.getDescription() != null) {
+//            existingEntity.setDescription(requestDto.getDescription());
+//        }
+//        if (requestDto.getDebtAmount() != null) {
+//            existingEntity.setDebtAmount(requestDto.getDebtAmount());
+//            if (requestDto.getDebtAmount().compareTo(BigDecimal.ZERO) <= 0) {
+//                throw new IllegalArgumentException("Borc məbləği 0 manatdan çox olmalıdır.");
+//            }
+//        }
+//        if (requestDto.getNotes() != null) {
+//            existingEntity.setNotes(requestDto.getNotes());
+//        }
+//
+//
+//        if (requestDto.getIsFlexibleDueDate() != null) {
+//
+//            if (requestDto.getIsFlexibleDueDate()) {
+//                existingEntity.setIsFlexibleDueDate(true);
+//                existingEntity.setDueYear(null);
+//                existingEntity.setDueMonth(null);
+//            }
+//
+//            else {
+//                if (requestDto.getDueYear() == null || requestDto.getDueMonth() == null) {
+//                    throw new IllegalArgumentException("Konkret tarixə keçmək üçün il və ay qeyd olunmalıdır.");
+//                }
+//                existingEntity.setIsFlexibleDueDate(false);
+//                existingEntity.setDueYear(requestDto.getDueYear());
+//                existingEntity.setDueMonth(requestDto.getDueMonth());
+//            }
+//        }
+//
+//        else {
+//
+//            if (requestDto.getDueYear() != null) {
+//                existingEntity.setDueYear(requestDto.getDueYear());
+//            }
+//            if (requestDto.getDueMonth() != null) {
+//                existingEntity.setDueMonth(requestDto.getDueMonth());
+//            }
+//        }
+//
+//
+//        DebtEntity updatedEntity = debtRepository.save(existingEntity);
+//
+//
+//        return debtMapper.mapEntityToResponseDto(updatedEntity);
+//    }
+//
+
     @Transactional
     public DebtResponseDto updateDebt(Long id, DebtRequestDto requestDto) {
 
@@ -134,16 +231,30 @@ public class DebtService {
 
 
         if (requestDto.getDebtorName() != null && !requestDto.getDebtorName().isBlank()) {
-            existingEntity.setDebtorName(requestDto.getDebtorName());
+
+            String trimmedName = requestDto.getDebtorName().trim();
+
+
+            Optional<DebtEntity> anotherDebtWithSameName = debtRepository.findByDebtorNameIgnoreCase(trimmedName);
+
+
+            if (anotherDebtWithSameName.isPresent() && !anotherDebtWithSameName.get().getId().equals(id)) {
+                throw new IllegalArgumentException("'" + trimmedName + "' adlı borcalan artıq mövcuddur.");
+            }
+
+            existingEntity.setDebtorName(trimmedName);
         }
+
+
+        if (requestDto.getDebtAmount() != null) {
+            if (requestDto.getDebtAmount().compareTo(BigDecimal.ZERO) < 0) {
+                throw new IllegalArgumentException("Borc məbləği mənfi ola bilməz.");
+            }
+            existingEntity.setDebtAmount(requestDto.getDebtAmount());
+        }
+
         if (requestDto.getDescription() != null) {
             existingEntity.setDescription(requestDto.getDescription());
-        }
-        if (requestDto.getDebtAmount() != null) {
-            existingEntity.setDebtAmount(requestDto.getDebtAmount());
-            if (requestDto.getDebtAmount().compareTo(BigDecimal.ZERO) <= 0) {
-                throw new IllegalArgumentException("Borc məbləği 0 manatdan çox olmalıdır.");
-            }
         }
         if (requestDto.getNotes() != null) {
             existingEntity.setNotes(requestDto.getNotes());
@@ -151,14 +262,11 @@ public class DebtService {
 
 
         if (requestDto.getIsFlexibleDueDate() != null) {
-
             if (requestDto.getIsFlexibleDueDate()) {
                 existingEntity.setIsFlexibleDueDate(true);
                 existingEntity.setDueYear(null);
                 existingEntity.setDueMonth(null);
-            }
-
-            else {
+            } else {
                 if (requestDto.getDueYear() == null || requestDto.getDueMonth() == null) {
                     throw new IllegalArgumentException("Konkret tarixə keçmək üçün il və ay qeyd olunmalıdır.");
                 }
@@ -166,10 +274,7 @@ public class DebtService {
                 existingEntity.setDueYear(requestDto.getDueYear());
                 existingEntity.setDueMonth(requestDto.getDueMonth());
             }
-        }
-
-        else {
-
+        } else {
             if (requestDto.getDueYear() != null) {
                 existingEntity.setDueYear(requestDto.getDueYear());
             }
@@ -178,12 +283,10 @@ public class DebtService {
             }
         }
 
-
         DebtEntity updatedEntity = debtRepository.save(existingEntity);
-
-
         return debtMapper.mapEntityToResponseDto(updatedEntity);
     }
+
 
 
 
