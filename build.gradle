@@ -51,3 +51,4 @@ jib {
 		image = 'registry.hub.docker.com/bilaljava/debit-copybook-backend' // Docker Hub-da adlandırma
 	}
 }
+// Render cache temizleme testi v1.3
