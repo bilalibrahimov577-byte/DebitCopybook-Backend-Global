@@ -48,11 +48,11 @@ public class DebtService {
 //        DebtEntity savedEntity = debtRepository.save(debtEntity);
 //        return debtMapper.mapEntityToResponseDto(savedEntity);
 //    }
-//
-//    public List<DebtResponseDto> getAllDebts() {
-//        List<DebtEntity> debtEntities = debtRepository.findAll();
-//        return debtMapper.mapEntityListToResponseDtoList(debtEntities);
-//    }
+
+   public List<DebtResponseDto> getAllDebts() {
+       List<DebtEntity> debtEntities = debtRepository.findAll();
+       return debtMapper.mapEntityListToResponseDtoList(debtEntities);
+   }
 
     @Transactional
     public DebtResponseDto createDebt(DebtRequestDto requestDto) {
