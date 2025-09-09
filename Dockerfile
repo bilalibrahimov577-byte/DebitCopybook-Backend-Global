@@ -36,3 +36,5 @@ EXPOSE 8080
 
 # Proqramı işə salırıq
 ENTRYPOINT ["java","-jar","app.jar"]
+
+# Cache temizleme meqsedi ile elave edildi - v1.4
