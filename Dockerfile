@@ -1,7 +1,7 @@
 # --- STAGE 1: Build ---
 # JDK olan bir mühit götürürük və ona "builder" adını veririk
-FROM eclipse-temurin:21-jdk-jammy AS builder
-
+FROM eclipse-temurin:22-jdk-jammy AS builder
+#bu 2
 # İş qovluğunu təyin edirik
 WORKDIR /app
 
@@ -22,7 +22,8 @@ RUN ./gradlew build -x test
 
 # --- STAGE 2: Run ---
 # İndi daha kiçik, JRE olan bir mühit götürürük
-FROM eclipse-temurin:21-jre-jammy
+FROM eclipse-temurin:22-jre-jammy
+#bu bir
 
 # İş qovluğunu təyin edirik
 WORKDIR /app

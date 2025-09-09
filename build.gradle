@@ -11,7 +11,7 @@ description = 'Demo project for Spring Boot'
 
 java {
 	toolchain {
-		languageVersion = JavaLanguageVersion.of(21)
+		languageVersion = JavaLanguageVersion.of(22)
 	}
 }
 
@@ -45,7 +45,7 @@ tasks.named('test') {
 
 jib {
 	from {
-		image = 'eclipse-temurin:21-jre-jammy' // Java 21 üçün uyğun image
+		image = 'eclipse-temurin:22-jre-jammy' // Java 21 üçün uyğun image
 	}
 	to {
 		image = 'registry.hub.docker.com/bilaljava/debit-copybook-backend' // Docker Hub-da adlandırma
