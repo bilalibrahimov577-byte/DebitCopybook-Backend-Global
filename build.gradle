@@ -21,6 +21,12 @@ configurations {
 	}
 }
 
+
+configurations.all {
+	exclude group: 'commons-logging', module: 'commons-logging'
+}
+
+
 repositories {
 	mavenCentral()
 	maven { url "https://maven.google.com" }

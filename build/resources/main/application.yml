@@ -17,15 +17,15 @@ spring:
 server:
   port: 8080
 
-# BILAL, bu hissələri ƏLAVƏ ETMƏSƏK, Google ilə qeydiyyat və JWT təhlükəsizliyi İŞLƏMƏYƏCƏK.
 google:
   oauth:
     client-id:
-      android: ${GOOGLE_OAUTH_CLIENT_ID_ANDROID} # Flutter tətbiqin üçün Android client ID-si
-      web: ${GOOGLE_OAUTH_CLIENT_ID_WEB}     # Backend tətbiqin üçün Web client ID-si
+      android: ${GOOGLE_OAUTH_CLIENT_ID_ANDROID}
+      web: ${GOOGLE_OAUTH_CLIENT_ID_WEB}
 
 jwt:
-  secret-key: ${JWT_SECRET_KEY} # JWT tokenləri imzalamaq üçün gizli açar (ÇOX GÜCLÜ OLMALIDIR!)
-  expiration: 86400000          # JWT tokeninin etibarlılıq müddəti (milli saniyə ilə), burada 24 saat (24 * 60 * 60 * 1000)
+  secret-key: ${JWT_SECRET_KEY}
+  expiration: 86400000
+
 admin:
-  email: ibrahimovbilal9@gmail.com
+  email: ${ADMIN_EMAIL} # BILAL, buranı dəyişdirdik!
