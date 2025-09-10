@@ -1,19 +1,31 @@
 spring:
   application:
-    name: DebtCopybook
+    name: DebitCopybook
   datasource:
-    url: jdbc:postgresql://localhost:5432/Debts
-    username: postgres
-    password: bilal123
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: true
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
-        format_sql: true
+    show-sql: false
 
 server:
   port: 8080
+
+# BILAL, bu hissələri ƏLAVƏ ETMƏSƏK, Google ilə qeydiyyat və JWT təhlükəsizliyi İŞLƏMƏYƏCƏK.
+google:
+  oauth:
+    client-id:
+      android: ${GOOGLE_OAUTH_CLIENT_ID_ANDROID} # Flutter tətbiqin üçün Android client ID-si
+      web: ${GOOGLE_OAUTH_CLIENT_ID_WEB}     # Backend tətbiqin üçün Web client ID-si
+
+jwt:
+  secret-key: ${JWT_SECRET_KEY} # JWT tokenləri imzalamaq üçün gizli açar (ÇOX GÜCLÜ OLMALIDIR!)
+  expiration: 86400000          # JWT tokeninin etibarlılıq müddəti (milli saniyə ilə), burada 24 saat (24 * 60 * 60 * 1000)
+admin:
+  email: ibrahimovbilal9@gmail.com

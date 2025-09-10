@@ -12,8 +12,6 @@ import java.time.LocalDate;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-
-
 public class DebtResponseDto {
     private Long id;
     private String debtorName;
@@ -22,10 +20,10 @@ public class DebtResponseDto {
 
     private LocalDate createdAt;
 
-
     private Integer dueYear;
     private Integer dueMonth;
     private Boolean isFlexibleDueDate;
 
     private String notes;
+    private Long userId; // BILAL, bu sahəni əlavə etmək MÜTLƏQDİR. Bunu etməsək tətbiq çoxistifadəçili rejimdə İŞLƏMƏYƏCƏK!
 }

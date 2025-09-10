@@ -19,10 +19,9 @@ public class DebtMapper {
                 .debtorName(requestDto.getDebtorName())
                 .description(requestDto.getDescription())
                 .debtAmount(requestDto.getDebtAmount())
-                // Yeni tarix sahələri
                 .dueYear(requestDto.getDueYear())
                 .dueMonth(requestDto.getDueMonth())
-                .isFlexibleDueDate(requestDto.getIsFlexibleDueDate() != null ? requestDto.getIsFlexibleDueDate() : false) // Null gəlsə false olsun
+                .isFlexibleDueDate(requestDto.getIsFlexibleDueDate() != null ? requestDto.getIsFlexibleDueDate() : false)
                 .notes(requestDto.getNotes())
                 .build();
     }
@@ -36,12 +35,13 @@ public class DebtMapper {
                 .debtorName(entity.getDebtorName())
                 .description(entity.getDescription())
                 .debtAmount(entity.getDebtAmount())
-                .createdAt(entity.getCreatedAt()) // Yeni yaradılma tarixi
-                // Yeni tarix sahələri
+                .createdAt(entity.getCreatedAt())
                 .dueYear(entity.getDueYear())
                 .dueMonth(entity.getDueMonth())
                 .isFlexibleDueDate(entity.getIsFlexibleDueDate())
                 .notes(entity.getNotes())
+                .userId(entity.getUser().getId()) // BILAL, bu xətt əlavə edilməsi MÜTLƏQDİR.
+                // Borcun hansı istifadəçiyə aid olduğunu DTO-ya əlavə edirik.
                 .build();
     }
 
@@ -59,7 +59,6 @@ public class DebtMapper {
         if (requestDto.getDebtAmount() != null) {
             entity.setDebtAmount(requestDto.getDebtAmount());
         }
-        // Yeni tarix sahələrinin yenilənməsi
         if (requestDto.getDueYear() != null) {
             entity.setDueYear(requestDto.getDueYear());
         }
@@ -70,8 +69,6 @@ public class DebtMapper {
             entity.setIsFlexibleDueDate(requestDto.getIsFlexibleDueDate());
         } else {
             // Əgər isFlexibleDueDate RequestDto-da null gəlirsə, entity-nin mövcud dəyərini saxla
-            // və ya default olaraq false təyin et. Bu, front-end tərəfindən idarə olunmalıdır.
-            // İndiki vəziyyətdə mövcud dəyəri saxlayırıq.
         }
 
         if (requestDto.getNotes() != null) {

@@ -1,0 +1,31 @@
+spring:
+  application:
+    name: DebitCopybook
+  datasource:
+    url: jdbc:postgresql://localhost:5432/debitcopybookdb
+    username: postgres
+    password: bilal123
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+    show-sql: true # Lokalda SQL sorğularını görmək faydalı ola bilər
+
+server:
+  port: 8080
+
+google:
+  oauth:
+    client-id:
+      android: 1073865818355-vipgmch03bl87d09s0n5fa9focv704mh.apps.googleusercontent.com # Lokal test üçün Android Client ID (Google Cloud Console-dan)
+      web: 1073865818355-k2pdr0895lilfvdli2beogmko7cgj89r.apps.googleusercontent.com     # Lokal test üçün Web Client ID (Google Cloud Console-dan)
+
+jwt:
+  secret-key: BQa6rPnZ2PP5BQ0dC90STX56gRjPoMHF+WqfBa3gd1Q= # Lokal test üçün güclü bir açar
+  expiration: 86400000 # 24 saat (milli saniyə ilə)
+
+admin:
+  email: ibrahimovbilal9@gmail.com # Sizin admin emailiniz

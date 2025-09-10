@@ -9,6 +9,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import java.math.BigDecimal;
@@ -20,7 +21,7 @@ import jakarta.validation.constraints.Min;
 
 
 @Validated
-@SecurityRequirement(name = "X-API-KEY")
+//@SecurityRequirement(name = "X-API-KEY")
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("api/v1/debts")
@@ -33,6 +34,7 @@ public class DebtController {
 
     @Operation(summary = "Yeni borc yarat")
     @PostMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     public ResponseEntity<DebtResponseDto> createDebt(
             @Valid @RequestBody DebtRequestDto debtRequestDto) {
         DebtResponseDto createdDebt =
@@ -42,17 +44,21 @@ public class DebtController {
 
     @Operation(summary = "ID-yə görə borcu tap")
     @GetMapping("/findDebtById/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     public DebtResponseDto getDebtById(@PathVariable("id") Long id) {
         return debtService.getDebtById(id);
     }
 
+
     @Operation(summary = "Bütün borcları göstər")
     @GetMapping("/findAllDebts")
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     public ResponseEntity<List<DebtResponseDto>> getAllDebts() {
         List<DebtResponseDto> debts = debtService.getAllDebts();
         return ResponseEntity.ok(debts);
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     @PatchMapping("/updateDebt/{id}")
     @Operation(summary = "Borcu barədə məlumatları dəyiş")
     @ResponseStatus(HttpStatus.OK)
@@ -64,6 +70,7 @@ public class DebtController {
     @Operation(summary = "Borca ödəniş et")
     @PatchMapping("/payDebt/{id}")
     @ResponseStatus(HttpStatus.OK)
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     public DebtResponseDto makePayment(@PathVariable Long id,
                                        @RequestParam BigDecimal amount) {
         return debtService.makePayment(id, amount);
@@ -72,12 +79,14 @@ public class DebtController {
     @Operation(summary = "Borcu sil")
     @DeleteMapping("/deleteDebt/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     public void deleteDebt(@PathVariable Long id) {
         debtService.deleteDebt(id);
     }
 
     @Operation(summary = "İl və aya görə borcları tap")
     @GetMapping("/findByYearAndMonth")
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     public ResponseEntity<List<DebtResponseDto>> getDebtsByYearAndMonth(
             @RequestParam @Min(value = 2024, message = "İl 2024 və 2060 arasında olmalıdır")
             @Max(value = 2060, message = "İl 2024 və 2060 arasında olmalıdır")
@@ -92,6 +101,7 @@ public class DebtController {
 
     @Operation(summary = "'Pulum olanda' borclarını tap")
     @GetMapping("/findFlexibleDebts")
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     public ResponseEntity<List<DebtResponseDto>> getFlexibleDueDateDebts() {
         List<DebtResponseDto> debts = debtService.getFlexibleDueDateDebts();
         return ResponseEntity.ok(debts);
@@ -100,6 +110,7 @@ public class DebtController {
 
     @Operation(summary = "Borcalanın adına görə borcları axtar")
     @GetMapping("/searchByDebtorName")
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     public ResponseEntity<List<DebtResponseDto>> searchDebtsByDebtorName(
             @RequestParam String debtorName) {
         List<DebtResponseDto> debts = debtService.searchDebtsByDebtorName(debtorName);
@@ -110,6 +121,7 @@ public class DebtController {
     @Operation(summary = "Mövcud borcun məbləğini artır")
     @PatchMapping("/increaseDebt/{id}")
     @ResponseStatus(HttpStatus.OK)
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     public DebtResponseDto increaseDebt(
             @PathVariable Long id,
             @RequestParam BigDecimal amount) {

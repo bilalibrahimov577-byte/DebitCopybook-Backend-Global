@@ -1,8 +1,7 @@
 spring:
   application:
-    name: DebtCopybook
+    name: DebitCopybook
   datasource:
-
     url: ${DB_URL}
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
@@ -13,12 +12,20 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
-
     show-sql: false
 
 server:
   port: 8080
 
+google:
+  oauth:
+    client-id:
+      android: ${GOOGLE_OAUTH_CLIENT_ID_ANDROID}
+      web: ${GOOGLE_OAUTH_CLIENT_ID_WEB}
 
-api:
-  secret-key: ${API_SECRET_KEY}
+jwt:
+  secret-key: ${JWT_SECRET_KEY}
+  expiration: 86400000
+
+admin:
+  email: ${ADMIN_EMAIL} # BILAL, buranı dəyişdirdik!

@@ -46,17 +46,6 @@ public class DebtRequestDto {
     private String notes;
 
 
-//    @AssertTrue(message = "Ya il və ay daxil edilməli, ya da pulum olanda seçilməlidir, ikisi də eyni anda ola bilməz.")
-//    private boolean isValidDueDateConfiguration() {
-//        if (isFlexibleDueDate != null && isFlexibleDueDate) {
-//
-//            return dueYear == null && dueMonth == null;
-//        } else {
-//
-//            return dueYear != null && dueMonth != null;
-//        }
-//    }
-
 
 
 }

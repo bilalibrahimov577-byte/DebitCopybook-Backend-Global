@@ -23,6 +23,7 @@ configurations {
 
 repositories {
 	mavenCentral()
+	maven { url "https://maven.google.com" }
 }
 
 dependencies {
@@ -37,6 +38,24 @@ dependencies {
 
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
 	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.5")
+
+	implementation 'org.springframework.boot:spring-boot-starter-security'
+	implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
+	implementation 'io.jsonwebtoken:jjwt-api:0.12.5'
+	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.5'
+	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.5'
+
+	// BILAL, bu hissəni dəyişdiririk. Google kitabxanalarının versiyalarını BOM (Bill of Materials) ilə idarə edirik. MÜTLƏQDİR.
+	// Bu, bütün Google kitabxanalarının bir-biri ilə uyğun versiyalarını avtomatik olaraq təmin edəcək.
+	// libraries-bom-un ən son versiyasını Maven Central-dan yoxlaya bilərik. 26.3.0 hazırda sabitdir.
+	implementation platform('com.google.cloud:libraries-bom:26.3.0')
+
+	// İndi isə BOM-dan istifadə edərək Google asılılıqlarını versiya göstərmədən əlavə edirik:
+	implementation 'com.google.api-client:google-api-client'
+	implementation 'com.google.auth:google-auth-library-oauth2-http'
+	implementation 'com.google.oauth-client:google-oauth-client-jetty'
+	// 'com.google.api.client:google-api-client-gson' və ya 'com.google.http-client:google-http-client-gson'
+	// bu BOM vasitəsilə google-api-client tərəfindən düzgün versiyada gətirilməlidir.
 }
 
 tasks.named('test') {
@@ -45,10 +64,9 @@ tasks.named('test') {
 
 jib {
 	from {
-		image = 'eclipse-temurin:21-jre-jammy' // Java 21 üçün uyğun image
+		image = 'eclipse-temurin:21-jre-jammy'
 	}
 	to {
-		image = 'registry.hub.docker.com/bilaljava/debit-copybook-backend' // Docker Hub-da adlandırma
+		image = 'registry.hub.docker.com/bilaljava/debit-copybook-backend'
 	}
 }
-// Render cache temizleme testi v1.3
