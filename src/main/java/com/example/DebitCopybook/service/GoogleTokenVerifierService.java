@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
+import java.util.Arrays;
 import java.util.Collections; // Collections importu əlavə edildi
 
 @Service
@@ -37,7 +38,8 @@ public class GoogleTokenVerifierService {
         GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(TRANSPORT, JSON_FACTORY)
                 // Audience olaraq həm Flutter tətbiqin (Android client ID), həm də backend-in (Web client ID)
                 // ID-lərini təyin edə bilərik. Token ya Flutter üçün, ya da backend üçün buraxılmış ola bilər.
-                .setAudience(Collections.singletonList(androidClientId))
+                .setAudience(Arrays.asList(webClientId, androidClientId))
+                // .setAudience(Collections.singletonList(androidClientId))
                 // .setAudience(Arrays.asList(webClientId, androidClientId)) // Əgər hər ikisini dəstəkləmək istəsən
                 .build();
 
