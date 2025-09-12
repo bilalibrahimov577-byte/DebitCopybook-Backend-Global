@@ -1,16 +1,16 @@
 package com.example.DebitCopybook.service;
 
 import com.example.DebitCopybook.dao.entity.DebtEntity;
-import com.example.DebitCopybook.dao.entity.UserEntity; // Yeni: UserEntity-ni import etdik
+import com.example.DebitCopybook.dao.entity.UserEntity;
 import com.example.DebitCopybook.dao.repository.DebtRepository;
-import com.example.DebitCopybook.dao.repository.UserRepository; // Yeni: UserRepository-ni import etdik
-import com.example.DebitCopybook.exception.DebtNotFoundException; // Sizin istifadə etdiyiniz xəta sinifi
+import com.example.DebitCopybook.dao.repository.UserRepository;
+import com.example.DebitCopybook.exception.DebtNotFoundException;
 import com.example.DebitCopybook.model.mapper.DebtMapper;
 import com.example.DebitCopybook.model.request.DebtRequestDto;
 import com.example.DebitCopybook.model.response.DebtResponseDto;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.Authentication; // Yeni: Spring Security üçün
-import org.springframework.security.core.context.SecurityContextHolder; // Yeni: Spring Security üçün
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,49 +24,45 @@ public class DebtService {
 
     private final DebtRepository debtRepository;
     private final DebtMapper debtMapper;
-    private final UserRepository userRepository; // Yeni: UserRepository-ni inject etdik
+    private final UserRepository userRepository;
 
 
-    // BILAL, bu metod ÇOX VACİBDİR. Bunu əlavə etməsək İŞLƏMƏYƏCƏK.
-    // Bu metod cari daxil olmuş istifadəçinin ID-sini Spring Security Context-dən götürür.
-    // Artıq bütün borc əməliyyatları bu istifadəçi ID-sinə görə filtrlənəcək.
+
     private Long getCurrentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {
-            // Əgər istifadəçi identifikasiya olunmayıbsa, xəta atırıq. Bu vəziyyət əslində
-            // Spring Security konfiqurasiyası düzgün qurulubsa, icazə verilməyən endpointlər üçün baş verməməlidir.
+
             throw new IllegalStateException("Cari istifadəçi identifikasiya olunmayıb.");
         }
 
-        // SecurityConfiguration-da biz UserEntity obyektini Authentication obyekti kimi saxlayacağımız üçün,
-        // burada onu UserEntity-ə cast edə bilirik.
-        // Əgər siz CustomUserDetails implementasiyası edirsinizsə, o zaman CustomUserDetails-ə cast etməlisiniz
-        // və User ID-sini həmin obyektdən almalısınız.
+
         if (authentication.getPrincipal() instanceof UserEntity) { // Sizin UserEntity adı
             UserEntity currentUser = (UserEntity) authentication.getPrincipal();
             return currentUser.getId();
         }
 
-        // Əgər principal UserEntity tipində deyilsə, bu proqram məntiqində səhvdir.
+
         throw new IllegalStateException("Cari istifadəçi məlumatları tapılmadı və ya gözlənilən formatda deyil.");
     }
 
-    // --- Metodların yenilənmiş versiyaları başlayır ---
+
 
     @Transactional
     public DebtResponseDto createDebt(DebtRequestDto requestDto) {
-        // BILAL, bu metod tamamilə dəyişdirilməlidir. Köhnə şəkildə İŞLƏMƏYƏCƏK.
-        // Çünki artıq borclar bir istifadəçiyə bağlanmalıdır.
 
-        Long userId = getCurrentUserId(); // Cari istifadəçinin ID-sini alırıq
+
+        Long userId = getCurrentUserId();
         UserEntity currentUser = userRepository.findById(userId)
-                .orElseThrow(() -> new DebtNotFoundException("İstifadəçi tapılmadı ID: " + userId)); // UserEntity-ni tapırıq
+                .orElseThrow(() -> new DebtNotFoundException("İstifadəçi tapılmadı ID: " + userId));
+
+        long currentDebtCount = debtRepository.countByUserId(userId);
+        if (currentDebtCount >= 7) {
+            throw new IllegalStateException("Sizin borc siyahınızda artıq 50 borc qeyd olunub. Zəhmət olmasa, yeni borc əlavə etmək üçün mövcud borcları bağlayın.");
+        }
 
         String trimmedName = requestDto.getDebtorName().trim();
 
-        // Borcalanın adı unikal olmalıdır, lakin HƏR İSTİFADƏÇİ ÜÇÜN unikal olmalıdır.
-        // Yəni, bir istifadəçi üçün "Əli" adlı borcalan varsa, başqa bir istifadəçi üçün də "Əli" ola bilər.
-        // BILAL, bu xətt dəyişməsək İŞLƏMƏYƏCƏK.
+
         Optional<DebtEntity> existingDebt = debtRepository.findByUserIdAndDebtorNameIgnoreCase(userId, trimmedName);
 
         if (existingDebt.isPresent()) {
@@ -82,36 +78,33 @@ public class DebtService {
             requestDto.setDueMonth(null);
         }
 
-        requestDto.setDebtorName(trimmedName); // Trim edilmiş adı DTO-ya qaytarırıq
+        requestDto.setDebtorName(trimmedName);
 
         DebtEntity debtEntity = debtMapper.mapRequestDtoToEntity(requestDto);
-        debtEntity.setUser(currentUser); // BILAL, bu xətt ÇOX KRİTİKDİR. Borcu cari istifadəçiyə bağlayırıq.
-        // Bunu etməsək borclar istifadəçiyə bağlanmayacaq və sistem İŞLƏMƏYƏCƏK.
+        debtEntity.setUser(currentUser);
+
         DebtEntity savedEntity = debtRepository.save(debtEntity);
         return debtMapper.mapEntityToResponseDto(savedEntity);
     }
 
     public List<DebtResponseDto> getAllDebts() {
-        // BILAL, bu metod tamamilə dəyişdirilməlidir. Köhnə şəkildə İŞLƏMƏYƏCƏK.
-        // Hər kəsin borclarını deyil, yalnız cari istifadəçinin borclarını gətirməlidir.
+
         Long userId = getCurrentUserId();
-        List<DebtEntity> debtEntities = debtRepository.findAllByUserId(userId); // Yeni repository metodundan istifadə edirik
+        List<DebtEntity> debtEntities = debtRepository.findAllByUserId(userId);
         return debtMapper.mapEntityListToResponseDtoList(debtEntities);
     }
 
     public DebtResponseDto getDebtById(Long id) {
-        // BILAL, bu metod tamamilə dəyişdirilməlidir. Köhnə şəkildə İŞLƏMƏYƏCƏK.
-        // Təhlükəsizlik üçün borcun cari istifadəçiyə aid olduğunu yoxlamalıyıq.
+
         Long userId = getCurrentUserId();
-        DebtEntity debtEntity = debtRepository.findByIdAndUserId(id, userId) // Yeni repository metodundan istifadə edirik
+        DebtEntity debtEntity = debtRepository.findByIdAndUserId(id, userId)
                 .orElseThrow(() -> new DebtNotFoundException("Borc ID " + id + " ilə tapılmadı və ya bu istifadəçiyə aid deyil."));
         return debtMapper.mapEntityToResponseDto(debtEntity);
     }
 
     @Transactional
     public DebtResponseDto makePayment(Long id, BigDecimal paymentAmount) {
-        // BILAL, bu metod tamamilə dəyişdirilməlidir. Köhnə şəkildə İŞLƏMƏYƏCƏK.
-        // Təhlükəsizlik üçün borcun cari istifadəçiyə aid olduğunu yoxlamalıyıq.
+
         if (paymentAmount == null || paymentAmount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("Ödəniş məbləği müsbət olmalıdır.");
         }
@@ -129,13 +122,13 @@ public class DebtService {
                     .id(id)
                     .debtorName(existingEntity.getDebtorName())
                     .description(existingEntity.getDescription())
-                    .debtAmount(BigDecimal.ZERO) // DTO-da 'amount' olaraq əvəz etdik
+                    .debtAmount(BigDecimal.ZERO)
                     .createdAt(existingEntity.getCreatedAt())
                     .dueYear(existingEntity.getDueYear())
                     .dueMonth(existingEntity.getDueMonth())
                     .isFlexibleDueDate(existingEntity.getIsFlexibleDueDate())
                     .notes("Borc tam ödənildi və silindi.")
-                    .userId(userId) // BILAL, DTO-ya userId əlavə edilməlidir
+                    .userId(userId)
                     .build();
         } else {
             existingEntity.setDebtAmount(newDebt);
@@ -146,57 +139,51 @@ public class DebtService {
 
     @Transactional
     public void deleteDebt(Long id) {
-        // BILAL, bu metod tamamilə dəyişdirilməlidir. Köhnə şəkildə İŞLƏMƏYƏCƏK.
-        // Təhlükəsizlik üçün borcun cari istifadəçiyə aid olduğunu yoxlamalıyıq.
+
         Long userId = getCurrentUserId();
-        DebtEntity existingEntity = debtRepository.findByIdAndUserId(id, userId) // Yeni repository metodundan istifadə edirik
+        DebtEntity existingEntity = debtRepository.findByIdAndUserId(id, userId)
                 .orElseThrow(() -> new DebtNotFoundException("Borc ID " + id + " ilə tapılmadı və ya bu istifadəçiyə aid deyil."));
         debtRepository.delete(existingEntity);
     }
 
     public List<DebtResponseDto> getDebtsByYearAndMonth(Integer year, Integer month) {
-        // BILAL, bu metod tamamilə dəyişdirilməlidir. Köhnə şəkildə İŞLƏMƏYƏCƏK.
-        // Hər kəsin borclarını deyil, yalnız cari istifadəçinin borclarını gətirməlidir.
+
         if (year == null || month == null) {
             throw new IllegalArgumentException("Borcları il və aya görə axtarmaq üçün hər ikisi qeyd olunmalıdır.");
         }
         Long userId = getCurrentUserId();
-        List<DebtEntity> debtEntities = debtRepository.findByUserIdAndDueYearAndDueMonth(userId, year, month); // Yeni repository metodundan istifadə edirik
+        List<DebtEntity> debtEntities = debtRepository.findByUserIdAndDueYearAndDueMonth(userId, year, month);
         return debtMapper.mapEntityListToResponseDtoList(debtEntities);
     }
 
     public List<DebtResponseDto> getFlexibleDueDateDebts() {
-        // BILAL, bu metod tamamilə dəyişdirilməlidir. Köhnə şəkildə İŞLƏMƏYƏCƏK.
-        // Hər kəsin borclarını deyil, yalnız cari istifadəçinin borclarını gətirməlidir.
+
         Long userId = getCurrentUserId();
-        List<DebtEntity> debtEntities = debtRepository.findByUserIdAndIsFlexibleDueDateTrue(userId); // Yeni repository metodundan istifadə edirik
+        List<DebtEntity> debtEntities = debtRepository.findByUserIdAndIsFlexibleDueDateTrue(userId);
         return debtMapper.mapEntityListToResponseDtoList(debtEntities);
     }
 
     public List<DebtResponseDto> searchDebtsByDebtorName(String debtorName) {
-        // BILAL, bu metod tamamilə dəyişdirilməlidir. Köhnə şəkildə İŞLƏMƏYƏCƏK.
-        // Hər kəsin borclarını deyil, yalnız cari istifadəçinin borclarını gətirməlidir.
+
         if (debtorName == null || debtorName.trim().isEmpty()) {
             throw new IllegalArgumentException("Axtarış üçün borcalanın adı boş ola bilməz.");
         }
         Long userId = getCurrentUserId();
-        List<DebtEntity> debtEntities = debtRepository.findByUserIdAndDebtorNameContainingIgnoreCase(userId, debtorName); // Yeni repository metodundan istifadə edirik
+        List<DebtEntity> debtEntities = debtRepository.findByUserIdAndDebtorNameContainingIgnoreCase(userId, debtorName);
         return debtMapper.mapEntityListToResponseDtoList(debtEntities);
     }
 
     @Transactional
     public DebtResponseDto updateDebt(Long id, DebtRequestDto requestDto) {
-        // BILAL, bu metod tamamilə dəyişdirilməlidir. Köhnə şəkildə İŞLƏMƏYƏCƏK.
-        // Təhlükəsizlik üçün borcun cari istifadəçiyə aid olduğunu yoxlamalıyıq.
+
         Long userId = getCurrentUserId();
-        DebtEntity existingEntity = debtRepository.findByIdAndUserId(id, userId) // Yeni repository metodundan istifadə edirik
+        DebtEntity existingEntity = debtRepository.findByIdAndUserId(id, userId)
                 .orElseThrow(() -> new DebtNotFoundException("Borc ID " + id + " ilə tapılmadı və ya bu istifadəçiyə aid deyil."));
 
         if (requestDto.getDebtorName() != null && !requestDto.getDebtorName().isBlank()) {
             String trimmedName = requestDto.getDebtorName().trim();
 
-            // Borcalan adının yoxlanılması da istifadəçiyə aid olmalıdır
-            // BILAL, bu xətt dəyişməsək İŞLƏMƏYƏCƏK.
+
             Optional<DebtEntity> anotherDebtWithSameName = debtRepository.findByUserIdAndDebtorNameIgnoreCase(userId, trimmedName);
 
             // Əgər eyni adla başqa bir borc varsa və bu, cari borc deyil (ID-ləri fərqlidirsə)
@@ -268,9 +255,6 @@ public class DebtService {
         return debtMapper.mapEntityToResponseDto(updatedEntity);
     }
 
-    // DebtMapper-dən istifadə edirsiniz, ona görə mapEntityToResponseDto metoduna ehtiyac qalmır
-    // Lakin Response DTO-ya userId-ni də əlavə etdiyimiz üçün, mapper-i də yeniləməlisən.
-    // Əgər mapper-də əl ilə map etmirsənsə, o zaman DTO-ya userId sahəsini əlavə etməyin kifayətdir.
-    // Əks halda, DebtMapper sinifini də yeniləməliyik.
+
 
 }

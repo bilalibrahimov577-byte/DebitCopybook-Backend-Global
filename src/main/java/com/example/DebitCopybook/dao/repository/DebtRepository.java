@@ -39,4 +39,6 @@ public interface DebtRepository extends JpaRepository<DebtEntity, Long> {
 
     // Sizin əvvəlki @Query annotasiyasına ehtiyac qalmır, çünki JpaRepository method adlandırma konvensiyası ilə işimizi görürük.
     // Əgər spesifik bir sorğuya ehtiyacınız olarsa, onu da istifadəçi ID-sini nəzərə alaraq yeniləməlisiniz.
+
+    long countByUserId(Long userId);
 }

@@ -21,8 +21,7 @@ public class UserService implements UserDetailsService {
 
     private final UserRepository userRepository;
 
-    // BILAL, bu hissəni burada elan edirik. `application.yml`-dən dəyəri alacaq. MÜTLƏQDİR.
-    // Bu, sənin admin emailini proqrama daxil etməyə imkan verir.
+
     @Value("${admin.email}")
     private String adminEmail;
 
@@ -36,7 +35,7 @@ public class UserService implements UserDetailsService {
         if (existingUser.isPresent()) {
             return existingUser.get();
         } else {
-            // Yeni istifadəçi yarat
+
             UserEntity newUser = new UserEntity();
             newUser.setGoogleId(googleId);
             newUser.setEmail(email);
@@ -44,13 +43,11 @@ public class UserService implements UserDetailsService {
 
             Set<String> roles = new HashSet<>();
 
-            // BILAL, "if" şərtini burada dəyişdiririk. MÜTLƏQDİR.
-            // Bu, ya verilənlər bazasında ilk istifadəçidirsə, ya da onun emaili "admin.email" ilə eynidirsə,
-            // istifadəçiyə ADMIN rolunu verir.
+
             if (userRepository.count() == 0 || adminEmail.equals(email)) {
                 roles.add("ROLE_ADMIN");
             }
-            // Bütün istifadəçilər default olaraq USER roluna sahib olacaq.
+
             roles.add("ROLE_USER");
             newUser.setRoles(roles);
 
