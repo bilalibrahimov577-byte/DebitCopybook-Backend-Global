@@ -31,17 +31,18 @@ public class UserEntity implements UserDetails {
 
     private String name;
 
-    // BILAL, bu hissəni əlavə etməsək rollar saxlana bilməyəcək. MÜTLƏQDİR.
-    // Rol üçün bir Enum və ya String istifadə edə bilərik. Sadəlik üçün String istifadə edirik.
-    @ElementCollection(fetch = FetchType.EAGER) // Rollar adətən istifadəçi ilə birlikdə yüklənir
+    public boolean isAdmin() {
+        return roles != null && roles.contains("ADMIN");
+    }
+
+    @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"))
     @Column(name = "role")
-    private Set<String> roles; // İstifadəçinin rolları (məsələn, "ROLE_USER", "ROLE_ADMIN")
+    private Set<String> roles;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        // BILAL, əvvəlki kodda sadəcə "ROLE_USER" qaytarılırdı. İndi isə dinamik rolları qaytarırıq. MÜTLƏQDİR.
-        // Bu, Spring Security-yə istifadəçinin hansı səlahiyyətlərə malik olduğunu bildirir.
+
         return roles.stream()
                 .map(SimpleGrantedAuthority::new)
                 .collect(Collectors.toList());

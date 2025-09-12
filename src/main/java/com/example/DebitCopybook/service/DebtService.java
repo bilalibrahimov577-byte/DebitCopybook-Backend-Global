@@ -47,21 +47,63 @@ public class DebtService {
 
 
 
+//    @Transactional
+//    public DebtResponseDto createDebt(DebtRequestDto requestDto) {
+//
+//
+//        Long userId = getCurrentUserId();
+//        UserEntity currentUser = userRepository.findById(userId)
+//                .orElseThrow(() -> new DebtNotFoundException("İstifadəçi tapılmadı ID: " + userId));
+//
+//        long currentDebtCount = debtRepository.countByUserId(userId);
+//        if (currentDebtCount >= 25) {
+//            throw new IllegalStateException("Sizin borc siyahınızda artıq 25 borc qeyd olunub. Zəhmət olmasa, yeni borc əlavə etmək üçün mövcud borcları bağlayın." +
+//                    "və ya whatsapp(+99450-740-28-09) vasitəsilə adminlə əlaqə saxlayın ");
+//        }
+//
+//        String trimmedName = requestDto.getDebtorName().trim();
+//
+//
+//        Optional<DebtEntity> existingDebt = debtRepository.findByUserIdAndDebtorNameIgnoreCase(userId, trimmedName);
+//
+//        if (existingDebt.isPresent()) {
+//            throw new IllegalArgumentException("'" + trimmedName + "' adlı borcalan artıq bu siyahıda mövcuddur. Zəhmət olmasa yeni borc əlavə etmək üçün 'Borcu Artır' funksiyasından istifadə edin.");
+//        }
+//
+//        if (requestDto.getDebtAmount().compareTo(BigDecimal.ZERO) <= 0) {
+//            throw new IllegalArgumentException("Borc məbləği 0 manatdan çox olmalıdır.");
+//        }
+//
+//        if (requestDto.getIsFlexibleDueDate() != null && requestDto.getIsFlexibleDueDate()) {
+//            requestDto.setDueYear(null);
+//            requestDto.setDueMonth(null);
+//        }
+//
+//        requestDto.setDebtorName(trimmedName);
+//
+//        DebtEntity debtEntity = debtMapper.mapRequestDtoToEntity(requestDto);
+//        debtEntity.setUser(currentUser);
+//
+//        DebtEntity savedEntity = debtRepository.save(debtEntity);
+//        return debtMapper.mapEntityToResponseDto(savedEntity);
+//    }
+
     @Transactional
     public DebtResponseDto createDebt(DebtRequestDto requestDto) {
-
-
         Long userId = getCurrentUserId();
         UserEntity currentUser = userRepository.findById(userId)
                 .orElseThrow(() -> new DebtNotFoundException("İstifadəçi tapılmadı ID: " + userId));
 
+
+        int debtLimit = currentUser.isAdmin() ? 100 : 25;
+
         long currentDebtCount = debtRepository.countByUserId(userId);
-        if (currentDebtCount >= 7) {
-            throw new IllegalStateException("Sizin borc siyahınızda artıq 50 borc qeyd olunub. Zəhmət olmasa, yeni borc əlavə etmək üçün mövcud borcları bağlayın.");
+        if (currentDebtCount >= debtLimit) {
+            throw new IllegalStateException("Sizin borc siyahınızda limit dolub (" + debtLimit + " borc). " +
+                    "Yeni borc əlavə etmək üçün mövcud borcları bağlayın və ya whatsapp(+99450-740-28-09) vasitəsilə adminlə əlaqə saxlayın.");
         }
 
         String trimmedName = requestDto.getDebtorName().trim();
-
 
         Optional<DebtEntity> existingDebt = debtRepository.findByUserIdAndDebtorNameIgnoreCase(userId, trimmedName);
 
@@ -86,6 +128,7 @@ public class DebtService {
         DebtEntity savedEntity = debtRepository.save(debtEntity);
         return debtMapper.mapEntityToResponseDto(savedEntity);
     }
+
 
     public List<DebtResponseDto> getAllDebts() {
 
