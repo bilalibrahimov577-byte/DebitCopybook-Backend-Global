@@ -1,4 +1,5 @@
 package com.example.DebitCopybook.dao.entity;
+
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -9,8 +10,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Set; // Yeni import: Rolları saxlamaq üçün Set istifadə edəcəyik
-import java.util.stream.Collectors; // Yeni import
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Entity
 @Table(name = "app_users")
@@ -31,18 +32,19 @@ public class UserEntity implements UserDetails {
 
     private String name;
 
-    public boolean isAdmin() {
-        return roles != null && roles.contains("ADMIN");
-    }
-
+    // Rol sahəsini metodlardan əvvəl elan edin
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"))
     @Column(name = "role")
     private Set<String> roles;
 
+    // isAdmin metodunu burada saxlayın
+    public boolean isAdmin() {
+        return roles != null && roles.contains("ROLE_ADMIN");
+    }
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-
         return roles.stream()
                 .map(SimpleGrantedAuthority::new)
                 .collect(Collectors.toList());
