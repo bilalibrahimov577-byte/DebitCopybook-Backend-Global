@@ -557,18 +557,18 @@ public class DebtService {
             }
         }
 
-        if (!Objects.equals(oldNotes, existingEntity.getNotes())) {
-            boolean oldNotesWasEmpty = oldNotes == null || oldNotes.isBlank();
-            boolean newNotesIsEmpty = existingEntity.getNotes() == null || existingEntity.getNotes().isBlank();
 
-            if (oldNotesWasEmpty && !newNotesIsEmpty) {
-                changes.add("Qeyd əlavə edildi.");
-            } else if (!oldNotesWasEmpty && newNotesIsEmpty) {
-                changes.add("Qeyd silindi.");
-            } else {
-                changes.add("Qeyd yeniləndi.");
-            }
+
+        if (!Objects.equals(oldNotes, existingEntity.getNotes())) {
+            String oldNotesText = (oldNotes == null || oldNotes.isBlank()) ? "[boş]" : "'" + oldNotes + "'";
+            String newNotesText = (existingEntity.getNotes() == null || existingEntity.getNotes().isBlank()) ? "[boş]" : "'" + existingEntity.getNotes() + "'";
+            changes.add("Qeyd " + oldNotesText + "-dan " + newNotesText + "-a dəyişdirildi.");
         }
+
+
+
+
+
 
         if (!Objects.equals(oldIsFlexible, existingEntity.getIsFlexibleDueDate()) ||
                 !Objects.equals(oldDueYear, existingEntity.getDueYear()) ||
