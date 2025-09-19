@@ -22,6 +22,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -142,6 +144,7 @@ public class DebtService {
                 .eventType(HistoryEventType.CREATED) // Hadisənin növü: YARADILDI
                 .description("Borc yaradıldı.") // İstifadəçinin görəcəyi açıqlama
                 .amount(savedEntity.getDebtAmount()) // Yaradılan borcun ilkin məbləğini də qeyd edək
+                .eventDate(LocalDateTime.now(ZoneId.of("Asia/Baku")))
                 .build();
 
         // Tarixçə qeydini verilənlər bazasına yadda saxlayırıq
@@ -249,6 +252,7 @@ public class DebtService {
                 .eventType(HistoryEventType.PAYMENT) // Hadisənin növü: ÖDƏNİŞ
                 .description(description)
                 .amount(paymentAmount.negate()) // Ödəniş olduğu üçün məbləği mənfi işarə ilə saxlayaq
+                .eventDate(LocalDateTime.now(ZoneId.of("Asia/Baku")))
                 .build();
 
         debtHistoryRepository.save(historyEntry);
@@ -492,6 +496,7 @@ public class DebtService {
                     .debt(existingEntity)
                     .eventType(HistoryEventType.UPDATED)
                     .description(String.join(" \n", changes)) // Bütün dəyişiklikləri birləşdirib bir mətn edirik
+                    .eventDate(LocalDateTime.now(ZoneId.of("Asia/Baku")))
                     .build();
             debtHistoryRepository.save(historyEntry);
         }
@@ -562,6 +567,7 @@ public class DebtService {
                 .eventType(HistoryEventType.UPDATED) // Bu da bir növ yeniləmədir
                 .description(description)
                 .amount(amountToAdd) // Nə qədər artırıldığını da qeyd edək
+                .eventDate(LocalDateTime.now(ZoneId.of("Asia/Baku")))
                 .build();
 
         debtHistoryRepository.save(historyEntry);

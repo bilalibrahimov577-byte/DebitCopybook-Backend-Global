@@ -46,7 +46,7 @@ public class DebtHistoryEntity {
     // Hadisənin baş verdiyi dəqiq tarix və saat
     // @CreationTimestamp annotasiyası sayəsində bu sahə avtomatik olaraq
     // qeyd yaradılan anın tarixi ilə doldurulacaq. Bizim əl ilə set etməyimizə ehtiyac yoxdur.
-    @CreationTimestamp
+  //  @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private LocalDateTime eventDate;
 
