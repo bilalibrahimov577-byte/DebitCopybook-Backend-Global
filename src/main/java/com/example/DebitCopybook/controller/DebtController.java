@@ -1,4 +1,8 @@
 package com.example.DebitCopybook.controller;
+
+// === YENİ: DTO və Servis importları ===
+import com.example.DebitCopybook.model.request.PaymentRequestDto;
+import com.example.DebitCopybook.model.response.DebtHistoryResponseDto;
 import com.example.DebitCopybook.model.request.DebtRequestDto;
 import com.example.DebitCopybook.model.response.DebtResponseDto;
 import com.example.DebitCopybook.service.DebtService;
@@ -15,10 +19,11 @@ import java.util.List;
 import org.springframework.validation.annotation.Validated;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+
 @Validated
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("api/v1/debts")
+@RequestMapping("api/v1/debts") // Bütün endpoint-lərin başına "api/v1/debts" əlavə etdik
 @Tag(
         name = "Borc Controller",
         description = "Borcların yaradılması, əldə edilməsi, yenilənməsi, ödənişi və silinməsi üçün son nöqtələr"
@@ -29,97 +34,89 @@ public class DebtController {
     @Operation(summary = "Yeni borc yarat")
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
-    public ResponseEntity<DebtResponseDto> createDebt(
-            @Valid @RequestBody DebtRequestDto debtRequestDto) {
-        DebtResponseDto createdDebt =
-                debtService.createDebt(debtRequestDto);
+    public ResponseEntity<DebtResponseDto> createDebt(@Valid @RequestBody DebtRequestDto debtRequestDto) {
+        DebtResponseDto createdDebt = debtService.createDebt(debtRequestDto);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdDebt);
     }
 
     @Operation(summary = "ID-yə görə borcu tap")
-    @GetMapping("/findDebtById/{id}")
+    @GetMapping("/{id}") // Daha standart URL: /api/v1/debts/5
     @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     public DebtResponseDto getDebtById(@PathVariable("id") Long id) {
         return debtService.getDebtById(id);
     }
 
-
     @Operation(summary = "Bütün borcları göstər")
-    @GetMapping("/findAllDebts")
+    @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     public ResponseEntity<List<DebtResponseDto>> getAllDebts() {
         List<DebtResponseDto> debts = debtService.getAllDebts();
         return ResponseEntity.ok(debts);
     }
 
+    @Operation(summary = "Borc barədə məlumatları dəyiş")
+    @PutMapping("/{id}") // PUT daha standartdır (bütün obyekti yeniləyir)
     @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
-    @PatchMapping("/updateDebt/{id}")
-    @Operation(summary = "Borcu barədə məlumatları dəyiş")
-    @ResponseStatus(HttpStatus.OK)
-    public DebtResponseDto updateDebt(@PathVariable Long id,
-                                      @Valid @RequestBody DebtRequestDto debtRequestDto) {
+    public DebtResponseDto updateDebt(@PathVariable Long id, @Valid @RequestBody DebtRequestDto debtRequestDto) {
         return debtService.updateDebt(id, debtRequestDto);
     }
 
+    // === YENİ: Borca ödəniş etmək üçün standart endpoint ===
     @Operation(summary = "Borca ödəniş et")
-    @PatchMapping("/payDebt/{id}")
-    @ResponseStatus(HttpStatus.OK)
+    @PostMapping("/{id}/payments") // POST /api/v1/debts/5/payments
     @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
-    public DebtResponseDto makePayment(@PathVariable Long id,
-                                       @RequestParam BigDecimal amount) {
-        return debtService.makePayment(id, amount);
+    public DebtResponseDto makePayment(@PathVariable Long id, @Valid @RequestBody PaymentRequestDto paymentRequest) {
+        return debtService.makePayment(id, paymentRequest.getAmount());
     }
 
     @Operation(summary = "Borcu sil")
-    @DeleteMapping("/deleteDebt/{id}")
+    @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     public void deleteDebt(@PathVariable Long id) {
         debtService.deleteDebt(id);
     }
 
+    // === YENİ: Borcun tarixçəsini almaq üçün endpoint ===
+    @Operation(summary = "ID-yə görə borcun tarixçəsini göstər")
+    @GetMapping("/{id}/history") // GET /api/v1/debts/5/history
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
+    public ResponseEntity<List<DebtHistoryResponseDto>> getDebtHistory(@PathVariable Long id) {
+        List<DebtHistoryResponseDto> history = debtService.getDebtHistory(id); // Bu metodu DebtService-də yaradacağıq
+        return ResponseEntity.ok(history);
+    }
+
+    // Axtarış və filtr endpoint-ləri olduğu kimi qalır
     @Operation(summary = "İl və aya görə borcları tap")
-    @GetMapping("/findByYearAndMonth")
+    @GetMapping("/filter/by-date")
     @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     public ResponseEntity<List<DebtResponseDto>> getDebtsByYearAndMonth(
-            @RequestParam @Min(value = 2024, message = "İl 2024 və 2060 arasında olmalıdır")
-            @Max(value = 2060, message = "İl 2024 və 2060 arasında olmalıdır")
-            Integer year,
-
-            @RequestParam @Min(value = 1, message = "Ay 1 və 12 arasında olmalıdır")
-            @Max(value = 12, message = "Ay 1 və 12 arasında olmalıdır")
-            Integer month) {
+            @RequestParam @Min(2024) @Max(2060) Integer year,
+            @RequestParam @Min(1) @Max(12) Integer month) {
         List<DebtResponseDto> debts = debtService.getDebtsByYearAndMonth(year, month);
         return ResponseEntity.ok(debts);
     }
 
     @Operation(summary = "'Pulum olanda' borclarını tap")
-    @GetMapping("/findFlexibleDebts")
+    @GetMapping("/filter/flexible")
     @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     public ResponseEntity<List<DebtResponseDto>> getFlexibleDueDateDebts() {
         List<DebtResponseDto> debts = debtService.getFlexibleDueDateDebts();
         return ResponseEntity.ok(debts);
     }
 
-
     @Operation(summary = "Borcalanın adına görə borcları axtar")
-    @GetMapping("/searchByDebtorName")
+    @GetMapping("/search")
     @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
-    public ResponseEntity<List<DebtResponseDto>> searchDebtsByDebtorName(
-            @RequestParam String debtorName) {
-        List<DebtResponseDto> debts = debtService.searchDebtsByDebtorName(debtorName);
+    public ResponseEntity<List<DebtResponseDto>> searchDebtsByDebtorName(@RequestParam String name) {
+        List<DebtResponseDto> debts = debtService.searchDebtsByDebtorName(name);
         return ResponseEntity.ok(debts);
     }
 
-
     @Operation(summary = "Mövcud borcun məbləğini artır")
-    @PatchMapping("/increaseDebt/{id}")
-    @ResponseStatus(HttpStatus.OK)
+    @PostMapping("/{id}/increase") // POST daha məntiqlidir, çünki yeni bir dəyər əlavə edir
     @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
-    public DebtResponseDto increaseDebt(
-            @PathVariable Long id,
-            @RequestParam BigDecimal amount) {
-        return debtService.increaseDebt(id, amount);
+    public DebtResponseDto increaseDebt(@PathVariable Long id, @Valid @RequestBody PaymentRequestDto increaseRequest) {
+        return debtService.increaseDebt(id, increaseRequest.getAmount());
     }
-
 }
