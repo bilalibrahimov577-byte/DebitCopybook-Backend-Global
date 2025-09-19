@@ -9,7 +9,6 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -32,13 +31,13 @@ public class UserEntity implements UserDetails {
 
     private String name;
 
-    // Rol sahəsini metodlardan əvvəl elan edin
+
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"))
     @Column(name = "role")
     private Set<String> roles;
 
-    // isAdmin metodunu burada saxlayın
+
     public boolean isAdmin() {
         return roles != null && roles.contains("ROLE_ADMIN");
     }

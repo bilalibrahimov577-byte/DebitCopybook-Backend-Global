@@ -1,5 +1,4 @@
-package com.example.DebitCopybook.controller; // Paketi öz proyektinin adına uyğun dəyişdir
-
+package com.example.DebitCopybook.controller;
 import com.example.DebitCopybook.model.request.DebtRequestDto;
 import com.example.DebitCopybook.model.response.DebtResponseDto;
 import com.example.DebitCopybook.service.DebtService;
@@ -11,17 +10,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import java.math.BigDecimal;
 import java.util.List;
 import org.springframework.validation.annotation.Validated;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
-
-
-
 @Validated
-//@SecurityRequirement(name = "X-API-KEY")
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("api/v1/debts")
@@ -127,7 +121,5 @@ public class DebtController {
             @RequestParam BigDecimal amount) {
         return debtService.increaseDebt(id, amount);
     }
-
-
 
 }

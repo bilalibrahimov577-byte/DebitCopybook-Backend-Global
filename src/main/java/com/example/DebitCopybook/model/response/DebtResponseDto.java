@@ -25,5 +25,5 @@ public class DebtResponseDto {
     private Boolean isFlexibleDueDate;
 
     private String notes;
-    private Long userId; // BILAL, bu sahəni əlavə etmək MÜTLƏQDİR. Bunu etməsək tətbiq çoxistifadəçili rejimdə İŞLƏMƏYƏCƏK!
+    private Long userId;
 }

@@ -1,25 +1,25 @@
-package com.example.DebitCopybook.model.response; // Paketi öz proyektinin adına uyğun dəyişdir
+package com.example.DebitCopybook.model.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Builder; // Əgər builder istifadə etmək istəsəniz
+import lombok.Builder;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class AuthResponse {
-    private String token; // Yaradılmış JWT token
+    private String token;
     private Long userId;
     private String userName;
     private String userEmail;
 
-    // Xəta mesajları üçün əlavə konstruktor
+
     public AuthResponse(String message) {
         this.token = null;
         this.userId = null;
-        this.userName = message; // Mesajı burada saxlaya bilərik
+        this.userName = message;
         this.userEmail = null;
     }
 }

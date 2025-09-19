@@ -27,7 +27,7 @@ public class JwtService {
 
 
     @Value("${jwt.expiration}")
-    private long jwtExpiration; // Milli saniyə ilə
+    private long jwtExpiration;
 
 
     public String generateToken(UserEntity user) {

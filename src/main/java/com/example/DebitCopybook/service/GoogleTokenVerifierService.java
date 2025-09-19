@@ -1,18 +1,18 @@
-package com.example.DebitCopybook.service; // Paketi öz proyektinin adına uyğun dəyişdir
+package com.example.DebitCopybook.service;
 
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.JsonFactory;
-import com.google.api.client.json.gson.GsonFactory; // GsonFactory-i əlavə edək (və ya JacksonFactory)
+import com.google.api.client.json.gson.GsonFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.util.Arrays;
-import java.util.Collections; // Collections importu əlavə edildi
+
 
 @Service
 public class GoogleTokenVerifierService {

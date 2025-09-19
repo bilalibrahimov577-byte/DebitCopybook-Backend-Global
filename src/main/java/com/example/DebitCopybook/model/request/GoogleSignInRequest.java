@@ -1,4 +1,4 @@
-package com.example.DebitCopybook.model.request; // Paketi öz proyektinin adına uyğun dəyişdir
+package com.example.DebitCopybook.model.request;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -10,5 +10,5 @@ import lombok.Builder; // Əgər builder istifadə etmək istəsəniz
 @AllArgsConstructor
 @Builder
 public class GoogleSignInRequest {
-    private String idToken; // Flutter-dən gələn Google ID token
+    private String idToken;
 }

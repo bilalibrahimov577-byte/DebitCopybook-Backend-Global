@@ -1,0 +1,15 @@
+services:
+  # Sənin Render-dəki servisin üçün konfiqurasiya
+  - type: web
+    # Servisin adını Render-dəki kimi yazdım
+    name: DebitCopybook-Backend-Global
+    env: java
+
+    # Gradle üçün build əmri
+    buildCommand: "./gradlew build -x test"
+
+    # startCommand-ı sənin verdiyin .jar faylının adına uyğunlaşdırdım
+    startCommand: "java -jar build/libs/DebtCopybook-0.0.1-SNAPSHOT.jar"
+
+    # Ping sorğusu üçün Render-ə lazımdır
+    healthCheckPath: /public/ping

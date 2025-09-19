@@ -22,7 +22,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
-// BILAL, bu annotasiya @PreAuthorize kimi metod səviyyəli təhlükəsizlik annotasiyalarını aktivləşdirir. MÜTLƏQDİR.
+
 @EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfiguration {
 
@@ -41,9 +41,7 @@ public class SecurityConfiguration {
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
                                 "/v3/api-docs.yaml").permitAll()
-                        // BURADA HƏLƏLİK ROLE ƏSASLI ENDPOINT TƏHLÜKƏSİZLİYİ QURMURAM.
-                        // ÇÜNKİ @EnableMethodSecurity(prePostEnabled = true) ilə artıq Controller metodlarında
-                        // @PreAuthorize istifadə edərək səlahiyyətləri idarə edə bilərik.
+
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session

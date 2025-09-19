@@ -1,6 +1,5 @@
-package com.example.DebitCopybook.handler;
+package com.example.DebitCopybook.exception;
 
-import com.example.DebitCopybook.exception.DebtNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;

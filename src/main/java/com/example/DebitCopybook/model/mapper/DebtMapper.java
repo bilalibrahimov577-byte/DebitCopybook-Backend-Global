@@ -40,8 +40,8 @@ public class DebtMapper {
                 .dueMonth(entity.getDueMonth())
                 .isFlexibleDueDate(entity.getIsFlexibleDueDate())
                 .notes(entity.getNotes())
-                .userId(entity.getUser().getId()) // BILAL, bu xətt əlavə edilməsi MÜTLƏQDİR.
-                // Borcun hansı istifadəçiyə aid olduğunu DTO-ya əlavə edirik.
+                .userId(entity.getUser().getId())
+
                 .build();
     }
 
@@ -68,7 +68,7 @@ public class DebtMapper {
         if (requestDto.getIsFlexibleDueDate() != null) {
             entity.setIsFlexibleDueDate(requestDto.getIsFlexibleDueDate());
         } else {
-            // Əgər isFlexibleDueDate RequestDto-da null gəlirsə, entity-nin mövcud dəyərini saxla
+
         }
 
         if (requestDto.getNotes() != null) {
