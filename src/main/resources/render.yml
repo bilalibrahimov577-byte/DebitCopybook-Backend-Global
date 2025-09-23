@@ -3,12 +3,22 @@ services:
     name: DebitCopybook-Backend-Global
     env: java
     plan: free
+
     buildCommand: "./gradlew build -x test"
 
-    # Adı sadələşdirdiyimiz üçün startCommand-ı da yeniləyirik
     startCommand: "java -jar build/libs/app.jar"
 
-    healthCheckPath: /public/ping
     envVars:
       - key: JAVA_TOOL_OPTIONS
         value: -XX:MaxRAMPercentage=75.0
+
+    # ==========================================================
+    # ƏSAS DƏYİŞİKLİK BURADADIR
+    # ==========================================================
+    # Biz Render-in health check xidmətini daha ağıllı edirik.
+    healthCheck:
+      path: /public/ping
+      # Bu sətir Render-ə deyir ki, servis işə düşdükdən sonra
+      # ilk sağlamlıq yoxlamasını etməzdən əvvəl 45 saniyə gözlə.
+      # Bu, Java-nın tam oyanması üçün kifayət qədər vaxtdır.
+      initialDelaySeconds: 45
