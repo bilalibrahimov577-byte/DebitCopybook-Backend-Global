@@ -2,23 +2,13 @@ services:
   - type: web
     name: DebitCopybook-Backend-Global
     env: java
-
-    # Pulsuz plan üçün "Free" instance type-nı aydın şəkildə göstərmək yaxşıdır
     plan: free
-
-    # Build əmri
     buildCommand: "./gradlew build -x test"
 
-    # Əsas dəyişikliklər buradadır
-    startCommand: "java -XX:MaxRAMPercentage=75.0 -jar build/libs/DebtCopybook-0.0.1-SNAPSHOT.jar"
+    # Adı sadələşdirdiyimiz üçün startCommand-ı da yeniləyirik
+    startCommand: "java -jar build/libs/app.jar"
 
-    # Ping sorğusu üçün Render-ə lazımdır
     healthCheckPath: /public/ping
-
-    # JAVA_TOOL_OPTIONS ilə yaddaş ayarlarını təyin etmək
-    # Bu üsul daha çevikdir və startCommand-ı dəyişdirmir
     envVars:
       - key: JAVA_TOOL_OPTIONS
-        # Bu, JVM-ə konteynerin yaddaşının 70-80%-dən çoxunu istifadə etməməsini deyir.
-        # 512MB üçün bu təxminən 358-410MB edir ki, bu da təhlükəsizdir.
         value: -XX:MaxRAMPercentage=75.0

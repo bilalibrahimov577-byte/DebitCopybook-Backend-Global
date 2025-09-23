@@ -15,6 +15,11 @@ java {
 	}
 }
 
+
+// Bu konfiqurasiya "plain" JAR-ın yaradılmasının qarşısını alı
+
+
+
 configurations {
 	compileOnly {
 		extendsFrom annotationProcessor
@@ -69,6 +74,14 @@ dependencies {
 
 
 }
+
+bootJar {
+	archiveFileName = 'app.jar'
+}
+jar {
+	enabled = false
+}
+
 
 tasks.named('test') {
 	useJUnitPlatform()
