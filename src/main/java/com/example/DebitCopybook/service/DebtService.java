@@ -68,7 +68,7 @@ public class DebtService {
         UserEntity currentUser = userRepository.findById(userId)
                 .orElseThrow(() -> new DebtNotFoundException("İstifadəçi tapılmadı ID: " + userId));
 
-        int debtLimit = currentUser.isAdmin() ? 100 : 25;
+        int debtLimit = currentUser.isAdmin() ? 100 : 15;
         long currentDebtCount = debtRepository.countByUserId(userId);
         if (currentDebtCount >= debtLimit) {
             throw new IllegalStateException("Sizin borc siyahınızda limit dolub (" + debtLimit + " borc). " +
