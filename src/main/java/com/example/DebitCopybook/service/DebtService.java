@@ -164,7 +164,7 @@ public class DebtService {
         // deməli bu, köhnə versiyadandır (null, boş və ya başqa bir mətn fərq etməz).
         if (!MY_DEBT_VALUE.equals(description) && !DEBT_TO_ME_VALUE.equals(description)) {
             // Bu halda, biz onun dəyərini məcburi şəkildə standart dəyərimizlə əvəz edirik.
-            requestDto.setDescription("Növü təyin edilməyib");
+            requestDto.setDescription("Zəhmət olmasa play marketdən tətbiqi yeniləyin");
         }
         // Əgər gələn description bizim dəyərlərdən biridirsə, if bloku işləmir və dəyər olduğu kimi qalır.
 
