@@ -21,11 +21,11 @@ public class DebtRequestDto {
 
 
 
-    @NotBlank(message = "Borcun növü seçilməlidir. Zəhmət olmasa, tətbiqi Play Market-dən yeniləyin.")
-    @Pattern(
-            regexp = "^(mənim borcum|mənə olan borclar)$",
-            message = "Borcun növü düzgün deyil. Zəhmət olmasa, tətbiqi Play Market-dən yeniləyin."
-    )
+//    @NotBlank(message = "Borcun növü seçilməlidir. Zəhmət olmasa, tətbiqi Play Market-dən yeniləyin.")
+//    @Pattern(
+//            regexp = "^(mənim borcum|mənə olan borclar)$",
+//            message = "Borcun növü düzgün deyil. Zəhmət olmasa, tətbiqi Play Market-dən yeniləyin."
+//    )
     private String description;
     @NotNull(message = "borcun məbləği boş ola bilməz təxmini də olsa məbləğ yazılmalıdır")
     private BigDecimal debtAmount;

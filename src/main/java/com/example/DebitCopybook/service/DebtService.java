@@ -39,7 +39,7 @@ public class DebtService {
     private final UserRepository userRepository;
     private final DebtHistoryRepository debtHistoryRepository;
     private final DebtHistoryMapper debtHistoryMapper;
-
+    private static final String DEFAULT_DEBT_TYPE = "Növü təyin edilməyib";
     private Long getCurrentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {
@@ -61,6 +61,64 @@ public class DebtService {
 
 
 
+
+
+//    @Transactional
+//    public DebtResponseDto createDebt(DebtRequestDto requestDto) {
+//        Long userId = getCurrentUserId();
+//        UserEntity currentUser = userRepository.findById(userId)
+//                .orElseThrow(() -> new DebtNotFoundException("İstifadəçi tapılmadı ID: " + userId));
+//
+//        int debtLimit = currentUser.isAdmin() ? 100 : 15;
+//        long currentDebtCount = debtRepository.countByUserId(userId);
+//        if (currentDebtCount >= debtLimit) {
+//            throw new IllegalStateException("Sizin borc siyahınızda limit dolub (" + debtLimit + " borc). " +
+//                    "Yeni borc əlavə etmək üçün mövcud borcları bağlayın və ya whatsapp(+99450-740-28-09) vasitəsilə adminlə əlaqə saxlayın.");
+//        }
+//
+//        String trimmedName = requestDto.getDebtorName().trim();
+//        Optional<DebtEntity> existingDebt = debtRepository.findByUserIdAndDebtorNameIgnoreCase(userId, trimmedName);
+//        if (existingDebt.isPresent()) {
+//            throw new IllegalArgumentException("'" + trimmedName + "' adlı borcalan artıq bu siyahıda mövcuddur. Zəhmət olmasa yeni borc əlavə etmək üçün 'Borcu Artır' funksiyasından istifadə edin.");
+//        }
+//
+//        if (requestDto.getDebtAmount().compareTo(BigDecimal.ZERO) <= 0) {
+//            throw new IllegalArgumentException("Borc məbləği 0 manatdan çox olmalıdır.");
+//        }
+//
+//        if (requestDto.getIsFlexibleDueDate() != null && requestDto.getIsFlexibleDueDate()) {
+//            requestDto.setDueYear(null);
+//            requestDto.setDueMonth(null);
+//        }
+//
+//        requestDto.setDebtorName(trimmedName);
+//        DebtEntity debtEntity = debtMapper.mapRequestDtoToEntity(requestDto);
+//        debtEntity.setUser(currentUser);
+//
+//        // Əsas borcu verilənlər bazasına yadda saxlayırıq
+//        DebtEntity savedEntity = debtRepository.save(debtEntity);
+//
+//        // === BAŞLA: YENİ ƏLAVƏ EDİLƏN HİSSƏ ===
+//
+//        // İndi bu əməliyyatın tarixçəsini yaradırıq
+//        DebtHistoryEntity historyEntry = DebtHistoryEntity.builder()
+//                .debt(savedEntity) // Hansı borca aid olduğunu göstəririk
+//                .eventType(HistoryEventType.CREATED) // Hadisənin növü: YARADILDI
+//                .description("Borc yaradıldı.") // İstifadəçinin görəcəyi açıqlama
+//                .amount(savedEntity.getDebtAmount()) // Yaradılan borcun ilkin məbləğini də qeyd edək
+//                .eventDate(LocalDateTime.now(ZoneId.of("Asia/Baku")))
+//                .build();
+//
+//        // Tarixçə qeydini verilənlər bazasına yadda saxlayırıq
+//        debtHistoryRepository.save(historyEntry);
+//
+//        // === SON: YENİ ƏLAVƏ EDİLƏN HİSSƏ ===
+//
+//        // Ən sonda nəticəni istifadəçiyə qaytarırıq
+//        return debtMapper.mapEntityToResponseDto(savedEntity);
+//    }
+//
+//
 
 
     @Transactional
@@ -92,31 +150,45 @@ public class DebtService {
         }
 
         requestDto.setDebtorName(trimmedName);
+
+        // === BAŞLA: GERİYƏ UYĞUNLUQ ÜÇÜN ƏN DÜZGÜN MƏNTİQ ===
+
+        // Yeni versiyadan gəlməsi lazım olan dəqiq dəyərlər
+        final String MY_DEBT_VALUE = "mənim borcum";
+        final String DEBT_TO_ME_VALUE = "mənə olan borclar";
+
+        String description = requestDto.getDescription();
+
+        // Yoxlayırıq: Əgər gələn description bizim gözlədiyimiz dəyərlərdən biri DEYİLSƏ,
+        // deməli bu, köhnə versiyadandır (null, boş və ya başqa bir mətn fərq etməz).
+        if (!MY_DEBT_VALUE.equals(description) && !DEBT_TO_ME_VALUE.equals(description)) {
+            // Bu halda, biz onun dəyərini məcburi şəkildə standart dəyərimizlə əvəz edirik.
+            requestDto.setDescription("Növü təyin edilməyib");
+        }
+        // Əgər gələn description bizim dəyərlərdən biridirsə, if bloku işləmir və dəyər olduğu kimi qalır.
+
+        // === SON: YENİ MƏNTİQ ===
+
         DebtEntity debtEntity = debtMapper.mapRequestDtoToEntity(requestDto);
         debtEntity.setUser(currentUser);
 
         // Əsas borcu verilənlər bazasına yadda saxlayırıq
         DebtEntity savedEntity = debtRepository.save(debtEntity);
 
-        // === BAŞLA: YENİ ƏLAVƏ EDİLƏN HİSSƏ ===
-
         // İndi bu əməliyyatın tarixçəsini yaradırıq
         DebtHistoryEntity historyEntry = DebtHistoryEntity.builder()
-                .debt(savedEntity) // Hansı borca aid olduğunu göstəririk
-                .eventType(HistoryEventType.CREATED) // Hadisənin növü: YARADILDI
-                .description("Borc yaradıldı.") // İstifadəçinin görəcəyi açıqlama
-                .amount(savedEntity.getDebtAmount()) // Yaradılan borcun ilkin məbləğini də qeyd edək
-                .eventDate(LocalDateTime.now(ZoneId.of("Asia/Baku")))
+                .debt(savedEntity)
+                .eventType(HistoryEventType.CREATED)
+                .description("Borc yaradıldı.")
+                .amount(savedEntity.getDebtAmount())
+                .eventDate(LocalDateTime.now(ZoneId.of("Asia/Baki")))
                 .build();
 
-        // Tarixçə qeydini verilənlər bazasına yadda saxlayırıq
         debtHistoryRepository.save(historyEntry);
 
-        // === SON: YENİ ƏLAVƏ EDİLƏN HİSSƏ ===
-
-        // Ən sonda nəticəni istifadəçiyə qaytarırıq
         return debtMapper.mapEntityToResponseDto(savedEntity);
     }
+
 
 
 
