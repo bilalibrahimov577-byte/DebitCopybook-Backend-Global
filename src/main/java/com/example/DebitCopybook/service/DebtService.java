@@ -499,7 +499,7 @@ public class DebtService {
             // deməli bu köhnə versiyadan gələn bir dəyərdir (boş, null və ya başqa bir mətn fərq etməz).
             // Bu halda, databazamızı təmiz saxlamaq üçün onu standart dəyərimizlə əvəz edirik.
             if (!MY_DEBT_VALUE.equals(newDescription) && !DEBT_TO_ME_VALUE.equals(newDescription)) {
-                requestDto.setDescription("Növü təyin edilməyib");
+                requestDto.setDescription("Zəhmət olmasa play marketdən tətbiqi yeniləyin!!!!!!");
             }
         }
         // Əgər DTO-da description sahəsi heç göndərilməyibsə (null-dırsa), ona toxunmuruq. Bu o deməkdir ki,
