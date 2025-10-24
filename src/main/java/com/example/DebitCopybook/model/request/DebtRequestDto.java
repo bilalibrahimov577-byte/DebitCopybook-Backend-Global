@@ -21,10 +21,10 @@ public class DebtRequestDto {
 
 
 
-    @NotBlank(message = "Açıqlama boş ola bilməz")
+    @NotBlank(message = "Borcun növü seçilməlidir. Zəhmət olmasa, tətbiqi Play Market-dən yeniləyin.")
     @Pattern(
             regexp = "^(mənim borcum|mənə olan borclar)$",
-            message = "Açıqlama yalnız 'mənim borcum' və ya 'mənə olan borclar' ola bilər"
+            message = "Borcun növü düzgün deyil. Zəhmət olmasa, tətbiqi Play Market-dən yeniləyin."
     )
     private String description;
     @NotNull(message = "borcun məbləği boş ola bilməz təxmini də olsa məbləğ yazılmalıdır")
