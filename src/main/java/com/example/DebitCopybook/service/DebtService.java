@@ -23,7 +23,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
+//import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -181,7 +182,9 @@ public class DebtService {
                 .eventType(HistoryEventType.CREATED)
                 .description("Borc yaradıldı.")
                 .amount(savedEntity.getDebtAmount())
-                .eventDate(LocalDateTime.now(ZoneId.of("Asia/Baki")))
+               // .eventDate(LocalDateTime.now(ZoneId.of("Asia/Baki")))
+                //.eventDate(LocalDateTime.now(ZoneOffset.ofHours(4)))
+                .eventDate(LocalDateTime.now(ZoneOffset.ofHours(4)))
                 .build();
 
         debtHistoryRepository.save(historyEntry);
@@ -242,7 +245,8 @@ public class DebtService {
                 .eventType(HistoryEventType.PAYMENT)
                 .description(description)
                 .amount(paymentAmount.negate())
-                .eventDate(LocalDateTime.now(ZoneId.of("Asia/Baku")))
+               // .eventDate(LocalDateTime.now(ZoneId.of("Asia/Baku")))
+                .eventDate(LocalDateTime.now(ZoneOffset.ofHours(4)))
                 .build();
         debtHistoryRepository.save(paymentHistoryEntry);
 
@@ -258,7 +262,8 @@ public class DebtService {
                     .debt(existingEntity)
                     .eventType(HistoryEventType.UPDATED)
                     .description("Borc tam ödənildi və bütün məlumatlar silindi.")
-                    .eventDate(LocalDateTime.now(ZoneId.of("Asia/Baku")))
+                    //.eventDate(LocalDateTime.now(ZoneId.of("Asia/Baku")))
+                    .eventDate(LocalDateTime.now(ZoneOffset.ofHours(4)))
                     .build();
             debtHistoryRepository.save(closingHistoryEntry);
 
@@ -598,7 +603,8 @@ public class DebtService {
                     .debt(existingEntity)
                     .eventType(HistoryEventType.UPDATED)
                     .description(String.join("\n", changes))
-                    .eventDate(LocalDateTime.now(ZoneId.of("Asia/Baku")))
+                   // .eventDate(LocalDateTime.now(ZoneId.of("Asia/Baku")))
+                    .eventDate(LocalDateTime.now(ZoneOffset.ofHours(4)))
                     .build();
             debtHistoryRepository.save(historyEntry);
         }
@@ -641,7 +647,8 @@ public class DebtService {
                 .eventType(HistoryEventType.UPDATED) // Bu da bir növ yeniləmədir
                 .description(description)
                 .amount(amountToAdd) // Nə qədər artırıldığını da qeyd edək
-                .eventDate(LocalDateTime.now(ZoneId.of("Asia/Baku")))
+                //.eventDate(LocalDateTime.now(ZoneId.of("Asia/Baku")))
+                .eventDate(LocalDateTime.now(ZoneOffset.ofHours(4)))
                 .build();
 
         debtHistoryRepository.save(historyEntry);
