@@ -13,4 +13,8 @@ public interface DebtRepository extends JpaRepository<DebtEntity, Long> {
     List<DebtEntity> findByUserIdAndDebtorNameContainingIgnoreCase(Long userId, String debtorName);
     Optional<DebtEntity> findByUserIdAndDebtorNameIgnoreCase(Long userId, String debtorName);
     long countByUserId(Long userId);
+
+    List<DebtEntity> findByDescriptionAndUserId(String description, Long userId);
+
+
 }

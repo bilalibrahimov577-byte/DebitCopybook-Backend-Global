@@ -20,6 +20,9 @@ import org.springframework.validation.annotation.Validated;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 
+import static com.example.DebitCopybook.constants.DebtConstants.DEBT_TO_ME_DESCRIPTION;
+import static com.example.DebitCopybook.constants.DebtConstants.MY_DEBT_DESCRIPTION;
+
 @Validated
 @RequiredArgsConstructor
 @RestController
@@ -119,4 +122,27 @@ public class DebtController {
     public DebtResponseDto increaseDebt(@PathVariable Long id, @Valid @RequestBody PaymentRequestDto increaseRequest) {
         return debtService.increaseDebt(id, increaseRequest.getAmount());
     }
+
+
+    @Operation(summary = "Bütün 'mənim borcum' tipli borcları göstər")
+    @GetMapping("/my-debts") // URL: /api/v1/debts/my-debts
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
+    public ResponseEntity<List<DebtResponseDto>> getMyDebts() {
+        // Service metodunu sabit dəyər ilə çağırırıq
+        List<DebtResponseDto> debts = debtService.getDebtsByDescription(MY_DEBT_DESCRIPTION);
+        return ResponseEntity.ok(debts);
+    }
+
+
+    @Operation(summary = "Bütün 'mənə olan borclar' tipli borcları göstər")
+    @GetMapping("/debts-to-me") // URL: /api/v1/debts/debts-to-me
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
+    public ResponseEntity<List<DebtResponseDto>> getDebtsToMe() {
+
+        List<DebtResponseDto> debts = debtService.getDebtsByDescription(DEBT_TO_ME_DESCRIPTION);
+        return ResponseEntity.ok(debts);
+    }
+
+
+
 }

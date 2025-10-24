@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -464,5 +465,18 @@ public class DebtService {
         // Entity siyahısını DTO siyahısına çevirib qaytarırıq
         return debtHistoryMapper.toDtoList(historyEntities);
     }
+
+
+
+    public List<DebtResponseDto> getDebtsByDescription(String description) {
+        Long userId = getCurrentUserId();
+
+        List<DebtEntity> debtEntities = debtRepository.findByDescriptionAndUserId(description, userId);
+
+        return debtMapper.mapEntityListToResponseDtoList(debtEntities);
+    }
+
+
+
 
 }

@@ -19,9 +19,13 @@ public class DebtRequestDto {
     @Size(min =1, max = 25)
     private String debtorName;
 
-    @Schema(description = "Borcalanla bağlı 500 simvoldan ibarət təsvir daxil edə bilərsiz " +
-            "məsələn Həsən müəllim nəyə görə borcu yaranıbsa onu yazın")
-    @Size( max = 500)
+
+
+    @NotBlank(message = "Açıqlama boş ola bilməz")
+    @Pattern(
+            regexp = "^(mənim borcum|mənə olan borclar)$",
+            message = "Açıqlama yalnız 'mənim borcum' və ya 'mənə olan borclar' ola bilər"
+    )
     private String description;
     @NotNull(message = "borcun məbləği boş ola bilməz təxmini də olsa məbləğ yazılmalıdır")
     private BigDecimal debtAmount;
