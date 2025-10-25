@@ -164,7 +164,7 @@ public class DebtService {
         // deməli bu, köhnə versiyadandır (null, boş və ya başqa bir mətn fərq etməz).
         if (!MY_DEBT_VALUE.equals(description) && !DEBT_TO_ME_VALUE.equals(description)) {
             // Bu halda, biz onun dəyərini məcburi şəkildə standart dəyərimizlə əvəz edirik.
-            requestDto.setDescription("Zəhmət olmasa play marketdən tətbiqi yeniləyin");
+            requestDto.setDescription("Zəhmət olmasa play marketdə yenilenme olub-olmadigini yoxlayin");
         }
         // Əgər gələn description bizim dəyərlərdən biridirsə, if bloku işləmir və dəyər olduğu kimi qalır.
 
@@ -499,7 +499,7 @@ public class DebtService {
             // deməli bu köhnə versiyadan gələn bir dəyərdir (boş, null və ya başqa bir mətn fərq etməz).
             // Bu halda, databazamızı təmiz saxlamaq üçün onu standart dəyərimizlə əvəz edirik.
             if (!MY_DEBT_VALUE.equals(newDescription) && !DEBT_TO_ME_VALUE.equals(newDescription)) {
-                requestDto.setDescription("Zəhmət olmasa play marketdən tətbiqi yeniləyin!!!!!!");
+                requestDto.setDescription("Zəhmət olmasa play marketdə yenilenme olub-olmadigini yoxlayin");
             }
         }
         // Əgər DTO-da description sahəsi heç göndərilməyibsə (null-dırsa), ona toxunmuruq. Bu o deməkdir ki,
