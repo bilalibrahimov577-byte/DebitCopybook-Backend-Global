@@ -1,6 +1,6 @@
 package com.example.DebitCopybook.controller;
 
-// === YENİ: DTO və Servis importları ===
+
 import com.example.DebitCopybook.model.request.PaymentRequestDto;
 import com.example.DebitCopybook.model.response.DebtHistoryResponseDto;
 import com.example.DebitCopybook.model.request.DebtRequestDto;
@@ -26,7 +26,7 @@ import static com.example.DebitCopybook.constants.DebtConstants.MY_DEBT_DESCRIPT
 @Validated
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("api/v1/debts") // Bütün endpoint-lərin başına "api/v1/debts" əlavə etdik
+@RequestMapping("api/v1/debts")
 @Tag(
         name = "Borc Controller",
         description = "Borcların yaradılması, əldə edilməsi, yenilənməsi, ödənişi və silinməsi üçün son nöqtələr"
@@ -43,7 +43,7 @@ public class DebtController {
     }
 
     @Operation(summary = "ID-yə görə borcu tap")
-    @GetMapping("/{id}") // Daha standart URL: /api/v1/debts/5
+    @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     public DebtResponseDto getDebtById(@PathVariable("id") Long id) {
         return debtService.getDebtById(id);
@@ -58,15 +58,15 @@ public class DebtController {
     }
 
     @Operation(summary = "Borc barədə məlumatları dəyiş")
-    @PutMapping("/{id}") // PUT daha standartdır (bütün obyekti yeniləyir)
+    @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     public DebtResponseDto updateDebt(@PathVariable Long id, @Valid @RequestBody DebtRequestDto debtRequestDto) {
         return debtService.updateDebt(id, debtRequestDto);
     }
 
-    // === YENİ: Borca ödəniş etmək üçün standart endpoint ===
+
     @Operation(summary = "Borca ödəniş et")
-    @PostMapping("/{id}/payments") // POST /api/v1/debts/5/payments
+    @PostMapping("/{id}/payments")
     @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     public DebtResponseDto makePayment(@PathVariable Long id, @Valid @RequestBody PaymentRequestDto paymentRequest) {
         return debtService.makePayment(id, paymentRequest.getAmount());
@@ -80,16 +80,16 @@ public class DebtController {
         debtService.deleteDebt(id);
     }
 
-    // === YENİ: Borcun tarixçəsini almaq üçün endpoint ===
+
     @Operation(summary = "ID-yə görə borcun tarixçəsini göstər")
-    @GetMapping("/{id}/history") // GET /api/v1/debts/5/history
+    @GetMapping("/{id}/history")
     @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     public ResponseEntity<List<DebtHistoryResponseDto>> getDebtHistory(@PathVariable Long id) {
         List<DebtHistoryResponseDto> history = debtService.getDebtHistory(id); // Bu metodu DebtService-də yaradacağıq
         return ResponseEntity.ok(history);
     }
 
-    // Axtarış və filtr endpoint-ləri olduğu kimi qalır
+
     @Operation(summary = "İl və aya görə borcları tap")
     @GetMapping("/filter/by-date")
     @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
@@ -117,7 +117,7 @@ public class DebtController {
     }
 
     @Operation(summary = "Mövcud borcun məbləğini artır")
-    @PostMapping("/{id}/increase") // POST daha məntiqlidir, çünki yeni bir dəyər əlavə edir
+    @PostMapping("/{id}/increase")
     @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     public DebtResponseDto increaseDebt(@PathVariable Long id, @Valid @RequestBody PaymentRequestDto increaseRequest) {
         return debtService.increaseDebt(id, increaseRequest.getAmount());
@@ -125,17 +125,17 @@ public class DebtController {
 
 
     @Operation(summary = "Bütün 'mənim borcum' tipli borcları göstər")
-    @GetMapping("/my-debts") // URL: /api/v1/debts/my-debts
+    @GetMapping("/my-debts")
     @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     public ResponseEntity<List<DebtResponseDto>> getMyDebts() {
-        // Service metodunu sabit dəyər ilə çağırırıq
+
         List<DebtResponseDto> debts = debtService.getDebtsByDescription(MY_DEBT_DESCRIPTION);
         return ResponseEntity.ok(debts);
     }
 
 
     @Operation(summary = "Bütün 'mənə olan borclar' tipli borcları göstər")
-    @GetMapping("/debts-to-me") // URL: /api/v1/debts/debts-to-me
+    @GetMapping("/debts-to-me")
     @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     public ResponseEntity<List<DebtResponseDto>> getDebtsToMe() {
 

@@ -11,7 +11,7 @@ public class DebitCopybookApplication {
 
 	@PostConstruct
 	public void init() {
-		// Tətbiqin işlədiyi hər yerdə saat qurşağını Bakı vaxtına təyin edirik
+
 		TimeZone.setDefault(TimeZone.getTimeZone("Asia/Baku"));
 	}
 	public static void main(String[] args) {
