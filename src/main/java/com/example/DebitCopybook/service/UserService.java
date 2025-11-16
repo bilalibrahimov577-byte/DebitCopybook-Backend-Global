@@ -9,10 +9,11 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
-
+import org.springframework.transaction.annotation.Transactional; // --> YENİ İMPORT
 
 import java.util.HashSet;
 import java.util.Optional;
+import java.util.Random; // --> YENİ İMPORT
 import java.util.Set;
 
 @Service
@@ -21,22 +22,45 @@ public class UserService implements UserDetailsService {
 
     private final UserRepository userRepository;
 
-
     @Value("${admin.email}")
     private String adminEmail;
 
 
+
+    private String generateUniqueDebtId() {
+        Random random = new Random();
+        while (true) {
+            int number = random.nextInt(9000) + 1000;
+            String debtId = String.format("%02d-%02d", number / 100, number % 100);
+
+            // Bu ID-nin bazada başqası tərəfindən istifadə olunmadığını yoxlayırıq
+            if (!userRepository.existsByDebtId(debtId)) {
+                return debtId; // Əgər ID boşdadırsa, onu qaytarırıq
+            }
+            // Əgər ID tutulubsa, dövr (while) davam edir və yeni bir ID yaranır
+        }
+    }
+    // --> YENİ KOD BİTDİ
+
+
+    @Transactional // --> BU ANNOTASİYA VACİBDİR!
     public UserEntity findOrCreateUser(GoogleIdToken.Payload payload) {
         String googleId = payload.getSubject();
+        Optional<UserEntity> existingUserOpt = userRepository.findByGoogleId(googleId);
 
+        if (existingUserOpt.isPresent()) {
+            UserEntity existingUser = existingUserOpt.get();
 
-        Optional<UserEntity> existingUser = userRepository.findByGoogleId(googleId);
+            // --> YENİ KOD BAŞLADI: Mövcud istifadəçinin debtId-sini yoxlayırıq
+            if (existingUser.getDebtId() == null || existingUser.getDebtId().trim().isEmpty()) {
+                existingUser.setDebtId(generateUniqueDebtId());
+                return userRepository.save(existingUser); // Yenilənmiş istifadəçini yadda saxlayıb qaytarırıq
+            }
+            // --> YENİ KOD BİTDİ
 
-
-        if (existingUser.isPresent()) {
-            return existingUser.get();
+            return existingUser; // Əgər ID-si varsa, heçnə etmədən qaytarırıq
         } else {
-            String email = (String) payload.get("email");
+            String email = payload.getEmail();
             String name = (String) payload.get("name");
 
             UserEntity newUser = new UserEntity();
@@ -45,15 +69,15 @@ public class UserService implements UserDetailsService {
             newUser.setName(name);
 
             Set<String> roles = new HashSet<>();
-
-
             if (userRepository.count() == 0 || adminEmail.equals(email)) {
                 roles.add("ROLE_ADMIN");
             }
-
             roles.add("ROLE_USER");
             newUser.setRoles(roles);
 
+            // --> YENİ KOD BAŞLADI: Yeni istifadəçi üçün debtId yaradırıq
+            newUser.setDebtId(generateUniqueDebtId());
+            // --> YENİ KOD BİTDİ
 
             return userRepository.save(newUser);
         }

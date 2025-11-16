@@ -7,6 +7,8 @@ import com.example.DebitCopybook.dao.repository.DebtHistoryRepository;
 import com.example.DebitCopybook.dao.repository.DebtRepository;
 import com.example.DebitCopybook.dao.repository.UserRepository;
 import com.example.DebitCopybook.exception.DebtNotFoundException;
+import com.example.DebitCopybook.exception.InvalidRequestException;
+import com.example.DebitCopybook.model.enums.DebtStatus;
 import com.example.DebitCopybook.model.enums.HistoryEventType;
 import com.example.DebitCopybook.model.mapper.DebtHistoryMapper;
 import com.example.DebitCopybook.model.mapper.DebtMapper;
@@ -158,6 +160,7 @@ public class DebtService {
     public DebtResponseDto makePayment(Long id, BigDecimal paymentAmount) {
 
 
+
         if (paymentAmount == null || paymentAmount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("Ödəniş məbləği müsbət olmalıdır.");
         }
@@ -166,10 +169,23 @@ public class DebtService {
         DebtEntity existingEntity = debtRepository.findByIdAndUserId(id, userId)
                 .orElseThrow(() -> new DebtNotFoundException("Borc ID " + id + " ilə tapılmadı və ya bu istifadəçiyə aid deyil."));
 
+        if (existingEntity.getStatus() == DebtStatus.CONFIRMED) {
+            throw new InvalidRequestException("Qarşılıqlı təsdiqlənmiş borcları bu bölmədən dəyişmək mümkün deyil. Zəhmət olmasa, 'Dəyişiklik təklif et' funksiyasından istifadə edin.");
+
+
+
+        }
+
+
+
+
+
         BigDecimal currentDebt = existingEntity.getDebtAmount();
 
         if (paymentAmount.compareTo(currentDebt) > 0) {
             throw new IllegalArgumentException("Ödəniş məbləği (" + paymentAmount + " AZN) mövcud borcdan (" + currentDebt + " AZN) çox ola bilməz.");
+
+
         }
 
 
@@ -301,6 +317,10 @@ public class DebtService {
         DebtEntity existingEntity = debtRepository.findByIdAndUserId(id, userId)
                 .orElseThrow(() -> new DebtNotFoundException("Borc ID " + id + " ilə tapılmadı və ya bu istifadəçiyə aid deyil."));
 
+
+        if (existingEntity.getStatus() == DebtStatus.CONFIRMED) {
+            throw new InvalidRequestException("Qarşılıqlı təsdiqlənmiş borcları bu bölmədən dəyişmək mümkün deyil. Zəhmət olmasa, 'Dəyişiklik təklif et' funksiyasından istifadə edin.");
+        }
 
 
         if (requestDto.getDescription() != null) {
@@ -437,6 +457,10 @@ public class DebtService {
         DebtEntity existingEntity = debtRepository.findByIdAndUserId(id, userId)
                 .orElseThrow(() -> new DebtNotFoundException("Borc ID " + id + " ilə tapılmadı və ya bu istifadəçiyə aid deyil."));
 
+        if (existingEntity.getStatus() == DebtStatus.CONFIRMED) {
+            throw new InvalidRequestException("Qarşılıqlı təsdiqlənmiş borcları bu bölmədən dəyişmək mümkün deyil. Zəhmət olmasa, 'Dəyişiklik təklif et' funksiyasından istifadə edin.");
+
+        }
 
         BigDecimal oldAmount = existingEntity.getDebtAmount();
 

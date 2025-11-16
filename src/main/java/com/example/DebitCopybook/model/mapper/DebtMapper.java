@@ -2,6 +2,7 @@ package com.example.DebitCopybook.model.mapper;
 
 import com.example.DebitCopybook.dao.entity.DebtEntity;
 import com.example.DebitCopybook.model.request.DebtRequestDto;
+import com.example.DebitCopybook.model.request.SharedDebtRequestDto;
 import com.example.DebitCopybook.model.response.DebtResponseDto;
 import org.springframework.stereotype.Component;
 
@@ -81,4 +82,6 @@ public class DebtMapper {
                 .map(this::mapEntityToResponseDto)
                 .collect(Collectors.toList());
     }
+
+
 }
