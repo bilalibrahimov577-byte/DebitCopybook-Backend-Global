@@ -30,7 +30,7 @@ public class DebtEntity {
     private String notes;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false)
+    @Column(name = "status", nullable = true)
     private DebtStatus status = DebtStatus.SIMPLE;
 
     @ManyToOne(fetch = FetchType.LAZY)
