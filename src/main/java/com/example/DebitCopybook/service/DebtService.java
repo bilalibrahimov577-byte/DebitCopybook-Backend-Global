@@ -14,6 +14,7 @@ import com.example.DebitCopybook.model.mapper.DebtHistoryMapper;
 import com.example.DebitCopybook.model.mapper.DebtMapper;
 import com.example.DebitCopybook.model.request.DebtRequestDto;
 import com.example.DebitCopybook.model.response.DebtHistoryResponseDto;
+import com.example.DebitCopybook.model.response.DebtResponseDto;
 import com.example.DebitCopybook.model.response.LegacyDebtResponseDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
@@ -176,20 +177,69 @@ public class DebtService {
 
 
 
+//    @Transactional
+//    public LegacyDebtResponseDto updateDebt(Long id, DebtRequestDto requestDto) {
+//        Long userId = getCurrentUserId();
+//        DebtEntity existingEntity = debtRepository.findByIdAndUserId(id, userId)
+//                .orElseThrow(() -> new DebtNotFoundException("Borc ID " + id + " ilə tapılmadı..."));
+//        if (existingEntity.getStatus() == DebtStatus.CONFIRMED) {
+//            throw new InvalidRequestException("Qarşılıqlı təsdiqlənmiş borcları bu bölmədən dəyişmək mümkün deyil...");
+//        }
+//        // ... (bütün update məntiqi eyni qalır, ad dəyişməsi, məbləğ dəyişməsi və s.) ...
+//
+//        DebtEntity updatedEntity = debtRepository.save(existingEntity);
+//        // ... (dəyişiklikləri tarixçəyə yazma) ...
+//        return mapToLegacy(updatedEntity);
+//    }
+
+
+
     @Transactional
-    public LegacyDebtResponseDto updateDebt(Long id, DebtRequestDto requestDto) {
+    public DebtResponseDto updateDebt(Long id, DebtRequestDto requestDto) {
         Long userId = getCurrentUserId();
+
+        // 1. Dəyişdiriləcək borcu bazadan tapırıq
         DebtEntity existingEntity = debtRepository.findByIdAndUserId(id, userId)
                 .orElseThrow(() -> new DebtNotFoundException("Borc ID " + id + " ilə tapılmadı..."));
+
+        // 2. Qarşılıqlı borcların buradan dəyişdirilməsinin qarşısını alırıq
         if (existingEntity.getStatus() == DebtStatus.CONFIRMED) {
             throw new InvalidRequestException("Qarşılıqlı təsdiqlənmiş borcları bu bölmədən dəyişmək mümkün deyil...");
         }
-        // ... (bütün update məntiqi eyni qalır, ad dəyişməsi, məbləğ dəyişməsi və s.) ...
 
+        // 3. ===== ƏSAS DÜZƏLİŞ BURADADIR =====
+        // Mapper-in köməkçi metodu ilə requestDto-dan gələn yeni məlumatları
+        // bazadan tapdığımız köhnə entity-nin üzərinə yazırıq.
+        debtMapper.updateEntityFromRequestDto(requestDto, existingEntity);
+
+        // 4. Dəyişiklikləri tarixçəyə yazırıq (bu hissəni öz koduna uyğunlaşdır)
+        // Məsələn:
+        DebtHistoryEntity history = new DebtHistoryEntity();
+        history.setDebt(existingEntity);
+        history.setEventType(HistoryEventType.UPDATED);
+        history.setDescription("Borc məlumatları yeniləndi.");
+        history.setEventDate(LocalDateTime.now(ZoneOffset.ofHours(4)));
+        debtHistoryRepository.save(history);
+
+
+        // 5. Artıq üzəri yenilənmiş entity-ni bazada yadda saxlayırıq
         DebtEntity updatedEntity = debtRepository.save(existingEntity);
-        // ... (dəyişiklikləri tarixçəyə yazma) ...
-        return mapToLegacy(updatedEntity);
+
+        // 6. Nəticəni frontend-ə uyğun DTO-ya çevirib qaytarırıq
+        // Qeyd: Əgər sən hələ də LegacyDebtResponseDto istifadə edirsənsə, mapEntityToResponseDto yerinə onu yaz.
+        // Amma bütün sistemin eyni DTO ilə işləməsi daha yaxşıdır.
+        return debtMapper.mapEntityToResponseDto(updatedEntity);
     }
+
+
+
+
+
+
+
+
+
+
 
     @Transactional
     public LegacyDebtResponseDto increaseDebt(Long id, BigDecimal amountToAdd) {
