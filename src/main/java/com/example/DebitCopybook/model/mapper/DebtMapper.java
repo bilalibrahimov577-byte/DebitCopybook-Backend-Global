@@ -16,13 +16,17 @@ import java.util.stream.Collectors;
 public class DebtMapper {
 
     // KÖMƏKÇİ METOD: UserEntity -> UserDto (Null-dan qorunmuş)
+    // Bu metod UserEntity obyektini frontend üçün təhlükəsiz UserDto-ya çevirir.
     private UserDto mapUserEntityToUserDto(UserEntity userEntity) {
-        // Əgər userEntity tamamilə null-dırsa, boş bir DTO qaytarırıq
+        // 1. Əgər userEntity obyekti özü yoxdursa (null-dırsa),
+        //    frontend-in çökməməsi üçün standart məlumatlarla dolu bir obyekt qaytarırıq.
         if (userEntity == null) {
             return new UserDto(0L, "Naməlum İstifadəçi", "email@yoxdur.com", "00-00");
         }
 
-        // Hər bir sahəni yoxlayıb, null-dırsa standart dəyər veririk
+        // 2. Hər bir sahəni ayrı-ayrılıqda yoxlayırıq.
+        //    Əgər hər hansı bir sahə boş (null və ya ancaq boşluqlardan ibarət) gələrsə,
+        //    ona standart bir dəyər mənimsədirik.
         String name = StringUtils.hasText(userEntity.getName()) ? userEntity.getName() : "Naməlum İstifadəçi";
         String email = StringUtils.hasText(userEntity.getEmail()) ? userEntity.getEmail() : "email@yoxdur.com";
         String debtId = StringUtils.hasText(userEntity.getDebtId()) ? userEntity.getDebtId() : "00-00";
@@ -30,19 +34,20 @@ public class DebtMapper {
         return new UserDto(userEntity.getId(), name, email, debtId);
     }
 
-    // ƏSAS METODUMUZU YENİLƏYİRİK
+    // ƏSAS ÇEVİRMƏ METODU: DebtEntity -> DebtResponseDto
     public DebtResponseDto mapEntityToResponseDto(DebtEntity entity) {
         if (entity == null) {
             return null;
         }
 
-        // statusu Enum-dan String-ə təhlükəsiz şəkildə çeviririk
+        // statusu Enum tipindən String tipinə təhlükəsiz şəkildə çeviririk.
+        // null olarsa, "UNKNOWN" kimi gedəcək.
         String status = (entity.getStatus() != null) ? entity.getStatus().name() : "UNKNOWN";
 
         return DebtResponseDto.builder()
                 .id(entity.getId())
                 .debtorName(StringUtils.hasText(entity.getDebtorName()) ? entity.getDebtorName() : "Adsız")
-                .description(entity.getDescription()) // Bu onsuz da null ola bilər
+                .description(entity.getDescription()) // Bu sahənin null olması normaldır
                 .debtAmount(entity.getDebtAmount())
                 .createdAt(entity.getCreatedAt())
                 .dueYear(entity.getDueYear())
@@ -58,17 +63,18 @@ public class DebtMapper {
                 .build();
     }
 
-    // SİYAHI ÜÇÜN OLAN METODU DA YENİLƏYİRİK
+    // SİYAHI ÜÇÜN ÇEVİRMƏ METODU
     public List<DebtResponseDto> mapEntityListToResponseDtoList(List<DebtEntity> entities) {
         if (entities == null || entities.isEmpty()) {
             return Collections.emptyList();
         }
         return entities.stream()
-                .map(this::mapEntityToResponseDto)
+                .map(this::mapEntityToResponseDto) // Hər bir elementi yuxarıdakı metodla çevirir
                 .collect(Collectors.toList());
     }
 
-    // Bu metodlar olduğu kimi qalır, çünki onlar request-dən entity-yə çevirir.
+    // BU METODLAR REQUEST-ləri idarə etdiyi üçün olduğu kimi qalır.
+    // Onlar məlumatı qəbul edir, göndərmir.
     public DebtEntity mapRequestDtoToEntity(DebtRequestDto requestDto) {
         if (requestDto == null) {
             return null;
@@ -88,27 +94,12 @@ public class DebtMapper {
         if (requestDto == null || entity == null) {
             return;
         }
-
-        if (requestDto.getDebtorName() != null) {
-            entity.setDebtorName(requestDto.getDebtorName());
-        }
-        if (requestDto.getDescription() != null) {
-            entity.setDescription(requestDto.getDescription());
-        }
-        if (requestDto.getDebtAmount() != null) {
-            entity.setDebtAmount(requestDto.getDebtAmount());
-        }
-        if (requestDto.getDueYear() != null) {
-            entity.setDueYear(requestDto.getDueYear());
-        }
-        if (requestDto.getDueMonth() != null) {
-            entity.setDueMonth(requestDto.getDueMonth());
-        }
-        if (requestDto.getIsFlexibleDueDate() != null) {
-            entity.setIsFlexibleDueDate(requestDto.getIsFlexibleDueDate());
-        }
-        if (requestDto.getNotes() != null) {
-            entity.setNotes(requestDto.getNotes());
-        }
+        if (requestDto.getDebtorName() != null) entity.setDebtorName(requestDto.getDebtorName());
+        if (requestDto.getDescription() != null) entity.setDescription(requestDto.getDescription());
+        if (requestDto.getDebtAmount() != null) entity.setDebtAmount(requestDto.getDebtAmount());
+        if (requestDto.getDueYear() != null) entity.setDueYear(requestDto.getDueYear());
+        if (requestDto.getDueMonth() != null) entity.setDueMonth(requestDto.getDueMonth());
+        if (requestDto.getIsFlexibleDueDate() != null) entity.setIsFlexibleDueDate(requestDto.getIsFlexibleDueDate());
+        if (requestDto.getNotes() != null) entity.setNotes(requestDto.getNotes());
     }
 }

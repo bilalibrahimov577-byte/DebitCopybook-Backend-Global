@@ -24,11 +24,17 @@ public class DebtResponseDto {
     private Boolean isFlexibleDueDate;
     private String notes;
 
-    // --- YENİ SAHƏLƏR ---
+    // --- BU SAHƏLƏR QARŞILIQLI BORC ÜÇÜN ƏLAVƏ OLUNUR ---
+
+    // Borcun statusunu göstərir (məs: PENDING_APPROVAL, CONFIRMED, SIMPLE)
     private String status;
+
+    // Sorğunun bitmə vaxtını göstərir (yalnız PENDING_APPROVAL statusunda mənası var)
     private LocalDateTime requestExpiryTime;
 
-    // `userId` yerinə tam DTO obyektlərini istifadə edirik
+    // Borcu yaradan istifadəçinin məlumatları
     private UserDto user;
+
+    // Borcun qarşı tərəfinin məlumatları
     private UserDto counterpartyUser;
 }
