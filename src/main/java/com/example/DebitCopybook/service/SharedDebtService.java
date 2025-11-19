@@ -20,6 +20,7 @@ import com.example.DebitCopybook.model.request.SharedDebtRequestDto;
 import com.example.DebitCopybook.model.request.SharedDebtResponseRequestDto;
 import com.example.DebitCopybook.model.request.UpdateProposalRequestDto;
 import com.example.DebitCopybook.model.response.DebtResponseDto;
+import com.example.DebitCopybook.model.response.ProposalResponseDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -283,4 +284,42 @@ public class SharedDebtService {
         List<DebtEntity> debts = debtRepository.findPendingRequestsSentByUser(userId);
         return debtMapper.mapEntityListToResponseDtoList(debts);
     }
+
+
+    // --- IMPORTLARI UNUTMA ---
+    // import com.example.DebitCopybook.model.response.ProposalResponseDto;
+
+    // Mənə gələn dəyişiklik təkliflərini gətir
+    public List<ProposalResponseDto> getPendingUpdateProposalsForMe() {
+        Long currentUserId = getCurrentUserId();
+        List<DebtUpdateProposalEntity> entities = proposalRepository.findIncomingProposals(currentUserId, ProposalStatus.PENDING);
+
+        return entities.stream()
+                .map(this::mapProposalEntityToResponseDto) // <-- Mapper dəyişdi
+                .toList();
+    }
+
+    // Mənim göndərdiyim dəyişiklik təkliflərini gətir
+    public List<ProposalResponseDto> getPendingUpdateProposalsISent() {
+        Long currentUserId = getCurrentUserId();
+        List<DebtUpdateProposalEntity> entities = proposalRepository.findOutgoingProposals(currentUserId, ProposalStatus.PENDING);
+
+        return entities.stream()
+                .map(this::mapProposalEntityToResponseDto) // <-- Mapper dəyişdi
+                .toList();
+    }
+
+    // Köməkçi metod: Entity -> Response DTO çevrilməsi
+    private ProposalResponseDto mapProposalEntityToResponseDto(DebtUpdateProposalEntity entity) {
+        return ProposalResponseDto.builder()
+                .id(entity.getId())
+                .debtId(entity.getDebt().getId())
+                .proposerName(entity.getProposerUser().getName()) // Təklifi göndərənin adı
+                .originalAmount(entity.getDebt().getDebtAmount()) // Borcun indiki məbləği
+                .proposedAmount(entity.getProposedAmount())       // Təklif olunan
+                .originalNotes(entity.getDebt().getNotes())       // Borcun indiki qeydi
+                .proposedNotes(entity.getProposedNotes())         // Təklif olunan
+                .build();
+    }
+
 }
