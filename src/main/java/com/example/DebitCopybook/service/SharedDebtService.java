@@ -50,6 +50,8 @@ public class SharedDebtService {
         return ((UserEntity) authentication.getPrincipal()).getId();
     }
 
+    // SharedDebtService.java
+
     @Transactional
     public DebtResponseDto createSharedDebtRequest(SharedDebtRequestDto requestDto) {
         Long requesterId = getCurrentUserId(); // Sorğunu göndərən (Mən)
@@ -66,11 +68,13 @@ public class SharedDebtService {
         }
 
         // 3. Məlumatları DebtEntity-ə çeviririk.
-
-
-
         DebtRequestDto regularRequestDto = new DebtRequestDto();
-        regularRequestDto.setDebtorName(requestDto.getDebtorName());
+
+        // ===== DƏYİŞİKLİK BURADADIR =====
+        // `debtorName`-i artıq requestDto-dan yox, databazadan tapdığımız `counterparty`-nin adından götürürük!
+        regularRequestDto.setDebtorName(counterparty.getName());
+
+        // Qalan məlumatları köhnəsi kimi requestDto-dan götürürük
         regularRequestDto.setDebtAmount(requestDto.getDebtAmount());
         regularRequestDto.setDescription(requestDto.getDescription());
         regularRequestDto.setNotes(requestDto.getNotes());
@@ -78,14 +82,13 @@ public class SharedDebtService {
         regularRequestDto.setDueMonth(requestDto.getDueMonth());
         regularRequestDto.setIsFlexibleDueDate(requestDto.getIsFlexibleDueDate());
 
-// İndi isə MapStruct-ın bildiyi köhnə metoddan istifadə edirik
         DebtEntity debtEntity = debtMapper.mapRequestDtoToEntity(regularRequestDto);
 
         // --- ƏSAS MƏNTİQ ---
         debtEntity.setUser(requester); // Borcun sahibi (sorğunu göndərən)
         debtEntity.setCounterpartyUser(counterparty); // Borcun ikinci tərəfi
         debtEntity.setStatus(DebtStatus.PENDING_APPROVAL); // Status: TƏSDİQ GÖZLƏYƏN
-        debtEntity.setRequestExpiryTime(LocalDateTime.now(ZoneOffset.ofHours(4)).plusSeconds(120)); // Sorğunun bitmə vaxtı: 120 saniyə sonra
+        debtEntity.setRequestExpiryTime(LocalDateTime.now(ZoneOffset.ofHours(4)).plusSeconds(120));
 
         // 4. Bazada yadda saxlayırıq.
         DebtEntity savedDebt = debtRepository.save(debtEntity);
@@ -93,7 +96,6 @@ public class SharedDebtService {
         // 5. Frontend-ə cavab qaytarırıq.
         return debtMapper.mapEntityToResponseDto(savedDebt);
     }
-
 
     @Transactional
     public DebtResponseDto respondToSharedDebtRequest(Long debtId, SharedDebtResponseRequestDto responseDto) {
