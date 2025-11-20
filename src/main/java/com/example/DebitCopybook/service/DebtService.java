@@ -105,10 +105,12 @@ public class DebtService {
 
         return mapToLegacy(savedEntity);
     }
-
     public List<LegacyDebtResponseDto> getAllDebts() {
         Long userId = getCurrentUserId();
-        List<DebtEntity> debtEntities = debtRepository.findAllByUserId(userId);
+
+
+        List<DebtEntity> debtEntities = debtRepository.findPersonalDebtsIncludeNull(userId, DebtStatus.SIMPLE);
+
         return mapListToLegacy(debtEntities);
     }
 
