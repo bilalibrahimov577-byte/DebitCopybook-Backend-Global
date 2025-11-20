@@ -27,6 +27,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
@@ -203,19 +204,19 @@ public class SharedDebtService {
             throw new InvalidRequestException("Bu təklifə artıq cavab verilib və ya etibarsızdır.");
         }
 
-        // b) Cavab verən şəxs, təklifi göndərən şəxs OLMAMALIDIR (yəni qarşı tərəf olmalıdır).
+        // b) Cavab verən şəxs, təklifi göndərən şəxs OLMAMALIDIR.
         if (proposal.getProposerUser().getId().equals(responderId)) {
             throw new SecurityException("İstifadəçi öz təklifini təsdiqləyə bilməz.");
         }
 
-        // c) Cavab verən şəxsin borcun tərəflərindən biri olduğunu bir daha yoxlayırıq.
+        // c) İcazə yoxlanışı.
         boolean isOwner = debt.getUser().getId().equals(responderId);
         boolean isCounterparty = debt.getCounterpartyUser().getId().equals(responderId);
         if (!isOwner && !isCounterparty) {
             throw new SecurityException("Sizin bu təklifə cavab vermək üçün icazəniz yoxdur.");
         }
 
-        // d) Təklifin vaxtının bitib-bitmədiyini yoxlayırıq.
+        // d) Vaxt yoxlanışı (120 saniyə).
         if (proposal.getRequestExpiryTime().isBefore(LocalDateTime.now(ZoneOffset.ofHours(4)))) {
             proposal.setStatus(ProposalStatus.EXPIRED);
             proposalRepository.save(proposal);
@@ -225,18 +226,48 @@ public class SharedDebtService {
         // 3. Cavaba görə məntiqi icra edirik.
         if (responseDto.isAccepted()) {
             // --- ƏGƏR TƏKLİF QƏBUL EDİLİBSƏ ---
-            proposal.setStatus(ProposalStatus.ACCEPTED);
 
-            // Dəyişiklikləri əsas borca tətbiq edirik
-            StringBuilder changesDescription = new StringBuilder("Dəyişikliklər təsdiqləndi: \n");
+            // Dəyişiklikləri əsas borca tətbiq edirik (yadda saxlamamışdan əvvəl)
+            BigDecimal oldAmount = debt.getDebtAmount(); // Tarixçə üçün köhnə məbləğ
 
             if (proposal.getProposedAmount() != null) {
-                changesDescription.append("- Məbləğ ").append(debt.getDebtAmount()).append(" AZN-dən ").append(proposal.getProposedAmount()).append(" AZN-ə dəyişdirildi.\n");
                 debt.setDebtAmount(proposal.getProposedAmount());
             }
             if (proposal.getProposedNotes() != null) {
-                changesDescription.append("- Qeyd '").append(debt.getNotes()).append("'-dan '").append(proposal.getProposedNotes()).append("'-a dəyişdirildi.\n");
                 debt.setNotes(proposal.getProposedNotes());
+            }
+
+            // ===== ƏSAS DƏYİŞİKLİK BURADADIR: 0-A DÜŞƏNDƏ SİLİNMƏ =====
+            // Əgər yeni məbləğ 0 və ya daha azdırsa
+            if (debt.getDebtAmount().compareTo(BigDecimal.ZERO) <= 0) {
+
+                // Təklifin statusunu dəyişirik (texniki olaraq lazımdır, amma onsuz da silinəcək)
+                proposal.setStatus(ProposalStatus.ACCEPTED);
+
+                // Borcu bazadan silirik.
+                // Entity-lərin düzgün qurulubsa, bu əmr ona aid olan History-ni və Proposal-ları da siləcək.
+                debtRepository.delete(debt);
+
+                // Frontend-ə borcun bitdiyini bildirən boş bir cavab qaytarırıq
+                return DebtResponseDto.builder()
+                        .id(debt.getId())
+                        .debtAmount(BigDecimal.ZERO)
+                        .notes("Borc tam ödənildi və sistemdən silindi.")
+                        .build();
+            }
+            // ============================================================
+
+            // Əgər borc 0-dan böyükdürsə, adi qaydada davam edirik:
+            proposal.setStatus(ProposalStatus.ACCEPTED);
+
+            // Tarixçə mətni hazırlayırıq
+            StringBuilder changesDescription = new StringBuilder("Dəyişiklik təsdiqləndi: \n");
+            if (proposal.getProposedAmount() != null) {
+                changesDescription.append("- Məbləğ ").append(oldAmount).append(" AZN-dən ")
+                        .append(proposal.getProposedAmount()).append(" AZN-ə dəyişdirildi.\n");
+            }
+            if (proposal.getProposedNotes() != null) {
+                changesDescription.append("- Qeyd dəyişdirildi.\n");
             }
 
             // Dəyişiklikləri borcun tarixçəsinə yazırıq
@@ -258,11 +289,10 @@ public class SharedDebtService {
             proposal.setStatus(ProposalStatus.REJECTED);
             proposalRepository.save(proposal);
 
-            // Əsas borc dəyişməz qalır. Sadəcə təklifin rədd edildiyini bildiririk.
-            // Frontend-ə mövcud borcun son vəziyyətini qaytarırıq.
             return debtMapper.mapEntityToResponseDto(debt);
         }
     }
+
 
 
     public List<DebtResponseDto> getConfirmedSharedDebts() {
