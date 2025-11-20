@@ -1,13 +1,16 @@
 package com.example.DebitCopybook.dao.entity;
+
 import com.example.DebitCopybook.model.enums.DebtStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List; // List üçün import lazımdır
 
 @Entity
 @Table(name ="Debts")
@@ -40,9 +43,21 @@ public class DebtEntity {
     @Column(name = "request_expiry_time", nullable = true)
     private LocalDateTime requestExpiryTime;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private UserEntity user;
 
+    // --- YENİ ƏLAVƏLƏR (Silinmə xətası üçün) ---
 
+    // Borc silinəndə tarixçəsi də silinsin
+    @OneToMany(mappedBy = "debt", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<DebtHistoryEntity> history;
 
+    // Borc silinəndə ona aid dəyişiklik təklifləri də silinsin
+    @OneToMany(mappedBy = "debt", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<DebtUpdateProposalEntity> updateProposals;
+
+    // ------------------------------------------
 
     @PrePersist
     protected void onCreate() {
@@ -51,10 +66,4 @@ public class DebtEntity {
             isFlexibleDueDate = false;
         }
     }
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private UserEntity user;
-
-
 }
