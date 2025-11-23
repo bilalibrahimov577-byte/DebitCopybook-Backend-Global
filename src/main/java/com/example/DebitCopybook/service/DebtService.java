@@ -264,13 +264,29 @@ public class DebtService {
         return mapToLegacy(updatedEntity);
     }
 
+//    public List<DebtHistoryResponseDto> getDebtHistory(Long debtId) {
+//        Long userId = getCurrentUserId();
+//        debtRepository.findByIdAndUserId(debtId, userId)
+//                .orElseThrow(() -> new DebtNotFoundException("Borc ID " + debtId + " ilə tapılmadı..."));
+//        List<DebtHistoryEntity> historyEntities = debtHistoryRepository.findAllByDebtIdOrderByEventDateDesc(debtId);
+//        return debtHistoryMapper.toDtoList(historyEntities);
+//    }
+
+
     public List<DebtHistoryResponseDto> getDebtHistory(Long debtId) {
         Long userId = getCurrentUserId();
-        debtRepository.findByIdAndUserId(debtId, userId)
-                .orElseThrow(() -> new DebtNotFoundException("Borc ID " + debtId + " ilə tapılmadı..."));
+
+        // DƏYİŞİKLİK BURADADIR:
+        // Əvvəl findByIdAndUserId idi (ancaq yaradanı yoxlayırdı).
+        // İndi findSharedSharedDebtForUser istifadə edirik (hər iki tərəf görə bilsin).
+        debtRepository.findSharedDebtForUser(debtId, userId)
+                .orElseThrow(() -> new DebtNotFoundException("Bu borcu görmək üçün icazəniz yoxdur və ya borc tapılmadı. ID: " + debtId));
+
         List<DebtHistoryEntity> historyEntities = debtHistoryRepository.findAllByDebtIdOrderByEventDateDesc(debtId);
         return debtHistoryMapper.toDtoList(historyEntities);
     }
+
+
 
     public List<LegacyDebtResponseDto> getDebtsByDescription(String description) {
         Long userId = getCurrentUserId();

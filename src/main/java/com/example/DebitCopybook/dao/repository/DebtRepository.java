@@ -46,4 +46,8 @@ public interface DebtRepository extends JpaRepository<DebtEntity, Long> {
     @Query("SELECT d FROM DebtEntity d WHERE d.user.id = :userId AND (d.status = :status OR d.status IS NULL)")
     List<DebtEntity> findPersonalDebtsIncludeNull(@Param("userId") Long userId, @Param("status") DebtStatus status);
 
+    @Query("SELECT d FROM DebtEntity d WHERE d.id = :id AND (d.user.id = :userId OR d.counterpartyUser.id = :userId)")
+    Optional<DebtEntity> findSharedDebtForUser(@Param("id") Long id, @Param("userId") Long userId);
+
+
 }
