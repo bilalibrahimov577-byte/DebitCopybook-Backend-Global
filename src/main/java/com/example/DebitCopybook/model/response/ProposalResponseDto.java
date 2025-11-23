@@ -3,6 +3,7 @@ package com.example.DebitCopybook.model.response;
 import lombok.Builder;
 import lombok.Data;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Data
 @Builder
@@ -16,4 +17,6 @@ public class ProposalResponseDto {
 
     private String originalNotes;      // Köhnə qeyd
     private String proposedNotes;      // Yeni qeyd
+
+    private LocalDateTime requestExpiryTime;
 }

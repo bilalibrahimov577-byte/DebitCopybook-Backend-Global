@@ -348,8 +348,10 @@ public class SharedDebtService {
                 .originalAmount(entity.getDebt().getDebtAmount()) // Borcun indiki məbləği
                 .proposedAmount(entity.getProposedAmount())       // Təklif olunan
                 .originalNotes(entity.getDebt().getNotes())       // Borcun indiki qeydi
-                .proposedNotes(entity.getProposedNotes())         // Təklif olunan
-                .build();
+                .proposedNotes(entity.getProposedNotes())
+                .requestExpiryTime(entity.getRequestExpiryTime())
+                .build();// Təklif olunan
+
     }
 
 }
