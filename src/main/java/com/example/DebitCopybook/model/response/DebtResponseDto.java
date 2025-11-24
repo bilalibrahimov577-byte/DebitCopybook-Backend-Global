@@ -18,7 +18,7 @@ public class DebtResponseDto {
     private String debtorName;
     private String description;
     private BigDecimal debtAmount;
-    private LocalDate createdAt;
+    private LocalDateTime createdAt;
     private Integer dueYear;
     private Integer dueMonth;
     private Boolean isFlexibleDueDate;
