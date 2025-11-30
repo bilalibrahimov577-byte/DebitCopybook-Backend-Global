@@ -143,44 +143,57 @@ public class SharedDebtService {
     public DebtResponseDto respondToSharedDebtRequest(Long debtId, SharedDebtResponseRequestDto responseDto) {
         Long responderId = getCurrentUserId(); // Cavab verən istifadəçinin ID-si
 
+        // --- YENİ ƏLAVƏ: Limiti yoxlamaq üçün istifadəçi məlumatını çəkirik ---
+        UserEntity responder = userRepository.findById(responderId)
+                .orElseThrow(() -> new UserNotFoundException("İstifadəçi tapılmadı"));
+        // ----------------------------------------------------------------------
+
         // 1. Sorğunu ID-sinə görə bazadan tapırıq.
         DebtEntity debtRequest = debtRepository.findById(debtId)
                 .orElseThrow(() -> new DebtNotFoundException("Bu ID ilə borc sorğusu tapılmadı: " + debtId));
 
-        // 2. ÇOX VACİB YOXLAMALAR:
-        // a) Sorğunun statusu "Təsdiq Gözləyən" olmalıdır.
+        // 2. ÇOX VACİB YOXLAMALAR (Köhnə koddakı kimi):
+        // a) Status yoxlanışı
         if (debtRequest.getStatus() != DebtStatus.PENDING_APPROVAL) {
             throw new InvalidRequestException("Bu sorğuya artıq cavab verilib və ya etibarsızdır.");
         }
 
-        // b) Cavab verən şəxsin, sorğunun göndərildiyi doğru adam olduğunu yoxlayırıq.
+        // b) Kimlik yoxlanışı
         if (!debtRequest.getCounterpartyUser().getId().equals(responderId)) {
             throw new SecurityException("Sizin bu sorğuya cavab vermək üçün icazəniz yoxdur.");
         }
 
-        // c) Sorğunun vaxtının bitib-bitmədiyini yoxlayırıq (120 saniyə).
+        // c) Vaxt yoxlanışı (120 saniyə)
         if (debtRequest.getRequestExpiryTime().isBefore(LocalDateTime.now(ZoneOffset.ofHours(4)))) {
-            // Vaxtı keçmiş sorğunu bazadan silirik ki, "zibil" yığılmasın.
             debtRepository.delete(debtRequest);
             throw new InvalidRequestException("Sorğunun cavab vermə müddəti (120 saniyə) bitib.");
         }
 
-
         // 3. Cavaba görə məntiqi icra edirik.
         if (responseDto.isAccepted()) {
             // --- ƏGƏR SORĞU QƏBUL EDİLİBSƏ ---
-            debtRequest.setStatus(DebtStatus.CONFIRMED); // Statusu "Təsdiqlənmiş" olaraq dəyişirik.
-            debtRequest.setRequestExpiryTime(null); // Bitmə vaxtını silirik, çünki artıq lazımsızdır.
+
+            // ===== YENİ HİSSƏ: LİMİT YOXLAMASI BURADADIR =====
+            // Sən qəbul etməyə çalışırsan, amma əvvəlcə baxaq görək yerin varmı?
+            long currentDebtCount = debtRepository.countConfirmedSharedDebts(responderId);
+            int limit = responder.isAdmin() ? 100 : 15;
+
+            if (currentDebtCount >= limit) {
+                // Limit dolubsa, qəbul etməyə icazə vermirik
+                throw new InvalidRequestException("Sizin borc limitiniz (" + limit + ") dolub. " +
+                        "Yeni borc qəbul etmək üçün mövcud borcları bağlamalısan və ya Adminlə əlaqə saxlamalısan.");
+            }
+            // =================================================
+
+            debtRequest.setStatus(DebtStatus.CONFIRMED);
+            debtRequest.setRequestExpiryTime(null);
 
             DebtEntity confirmedDebt = debtRepository.save(debtRequest);
             return debtMapper.mapEntityToResponseDto(confirmedDebt);
         } else {
-            // --- ƏGƏR SORĞU RƏDD EDİLİBSƏ ---
-            // Rədd edilmiş sorğu artıq lazımsızdır, ona görə bazadan tamamilə silirik.
+            // --- ƏGƏR SORĞU RƏDD EDİLİBSƏ (Köhnə koddakı kimi) ---
             debtRepository.delete(debtRequest);
 
-            // Frontend-ə borcun silindiyini bildirmək üçün xüsusi bir cavab qaytarırıq.
-            // Bu, Flutter tərəfdə "Sorğu rədd edildi" mesajını göstərməyə kömək edəcək.
             return DebtResponseDto.builder()
                     .id(debtId)
                     .notes("Sorğu sizin tərəfinizdən rədd edildi və sistemdən silindi.")
