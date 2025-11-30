@@ -35,8 +35,11 @@ public class UserEntity implements UserDetails {
     @Column(name = "debt_id", unique = true, nullable = true)
     private String debtId;
 
-    @Column(columnDefinition = "integer default 0")
-    private int failedAttempts = 0; // Səhv ID yazma sayı
+    @Column(name = "failed_attempts", columnDefinition = "integer default 0")
+    private Integer failedAttempts = 0;
+
+    public int getFailedAttempts() {
+        return failedAttempts == null ? 0 : failedAttempts;}
 
     private LocalDateTime blockedUntil;
 
