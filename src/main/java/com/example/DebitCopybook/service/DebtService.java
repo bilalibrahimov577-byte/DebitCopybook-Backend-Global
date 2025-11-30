@@ -82,7 +82,7 @@ public class DebtService {
         }
 
         String trimmedName = requestDto.getDebtorName().trim();
-        Optional<DebtEntity> existingDebt = debtRepository.findByUserIdAndDebtorNameIgnoreCase(userId, trimmedName);
+        Optional<DebtEntity> existingDebt = debtRepository.findPersonalDebtByName(userId, trimmedName);
         if (existingDebt.isPresent()) {
             throw new IllegalArgumentException("'" + trimmedName + "' adlı borcalan artıq bu siyahıda mövcuddur...");
         }
@@ -161,21 +161,25 @@ public class DebtService {
 
     public List<LegacyDebtResponseDto> getDebtsByYearAndMonth(Integer year, Integer month) {
         Long userId = getCurrentUserId();
-        List<DebtEntity> debtEntities = debtRepository.findByUserIdAndDueYearAndDueMonth(userId, year, month);
+        // DƏYİŞDİ: findPersonalDebtsByDate çağırırıq
+        List<DebtEntity> debtEntities = debtRepository.findPersonalDebtsByDate(userId, year, month);
         return mapListToLegacy(debtEntities);
     }
 
     public List<LegacyDebtResponseDto> getFlexibleDueDateDebts() {
         Long userId = getCurrentUserId();
-        List<DebtEntity> debtEntities = debtRepository.findByUserIdAndIsFlexibleDueDateTrue(userId);
+        // DƏYİŞDİ: findPersonalFlexibleDebts çağırırıq
+        List<DebtEntity> debtEntities = debtRepository.findPersonalFlexibleDebts(userId);
         return mapListToLegacy(debtEntities);
     }
 
     public List<LegacyDebtResponseDto> searchDebtsByDebtorName(String debtorName) {
         Long userId = getCurrentUserId();
-        List<DebtEntity> debtEntities = debtRepository.findByUserIdAndDebtorNameContainingIgnoreCase(userId, debtorName);
+        // DƏYİŞDİ: searchPersonalDebtsByName çağırırıq
+        List<DebtEntity> debtEntities = debtRepository.searchPersonalDebtsByName(userId, debtorName);
         return mapListToLegacy(debtEntities);
     }
+
 
 
 
@@ -290,7 +294,8 @@ public class DebtService {
 
     public List<LegacyDebtResponseDto> getDebtsByDescription(String description) {
         Long userId = getCurrentUserId();
-        List<DebtEntity> debtEntities = debtRepository.findByDescriptionAndUserId(description, userId);
+        // DƏYİŞDİ: findPersonalDebtsByDescription çağırırıq
+        List<DebtEntity> debtEntities = debtRepository.findPersonalDebtsByDescription(userId, description);
         return mapListToLegacy(debtEntities);
     }
 }
