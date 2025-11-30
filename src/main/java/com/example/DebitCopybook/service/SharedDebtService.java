@@ -181,7 +181,7 @@ public class SharedDebtService {
             if (currentDebtCount >= limit) {
                 // Limit dolubsa, qəbul etməyə icazə vermirik
                 throw new InvalidRequestException("Sizin borc limitiniz (" + limit + ") dolub. " +
-                        "Yeni borc qəbul etmək üçün mövcud borcları bağlamalısan və ya Adminlə əlaqə saxlamalısan.");
+                        "Yeni borc qəbul etmək üçün mövcud borcları bağlamalısan və ya +994(50)-740-28-09 Adminlə əlaqə saxlamalısan.");
             }
             // =================================================
 
