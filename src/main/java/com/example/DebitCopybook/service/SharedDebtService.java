@@ -73,7 +73,7 @@ public class SharedDebtService {
 
         if (currentDebtCount >= limit) {
             throw new InvalidRequestException("Siz maksimum borc limitinə (" + limit + ") çatmısınız. " +
-                    "Yeni borc yaratmaq üçün Adminlə əlaqə saxlayın: +994XXXXXXXXX");
+                    "Yeni borc yaratmaq üçün Adminlə əlaqə saxlayın: +994(50)-740-28-09");
         }
 
         // 3. QARŞI TƏRƏFİN TAPILMASI (SƏHV ID MƏNTİQİ)
