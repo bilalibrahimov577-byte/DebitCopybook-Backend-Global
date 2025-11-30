@@ -25,4 +25,9 @@ public interface DebtUpdateProposalRepository extends JpaRepository<DebtUpdatePr
     List<DebtUpdateProposalEntity> findOutgoingProposals(@Param("userId") Long userId, @Param("status") ProposalStatus status);
 
 
+    @Query("SELECT COUNT(p) FROM DebtUpdateProposalEntity p WHERE p.debt.id = :debtId AND p.proposerUser.id = :userId AND p.status = :status")
+    long countPendingProposalsByDebtAndUser(@Param("debtId") Long debtId, @Param("userId") Long userId, @Param("status") ProposalStatus status);
+
+
+
 }

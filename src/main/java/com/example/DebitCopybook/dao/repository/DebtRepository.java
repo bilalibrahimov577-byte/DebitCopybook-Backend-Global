@@ -65,5 +65,9 @@ public interface DebtRepository extends JpaRepository<DebtEntity, Long> {
     @Query("SELECT d FROM DebtEntity d WHERE d.user.id = :userId AND LOWER(d.debtorName) = LOWER(:name) AND (d.status = com.example.DebitCopybook.model.enums.DebtStatus.SIMPLE OR d.status IS NULL)")
     Optional<DebtEntity> findPersonalDebtByName(@Param("userId") Long userId, @Param("name") String name);
 
+    @Query("SELECT COUNT(d) FROM DebtEntity d WHERE d.status = com.example.DebitCopybook.model.enums.DebtStatus.CONFIRMED AND (d.user.id = :userId OR d.counterpartyUser.id = :userId)")
+    long countConfirmedSharedDebts(@Param("userId") Long userId);
+
+
 
 }

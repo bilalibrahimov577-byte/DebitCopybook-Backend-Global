@@ -8,6 +8,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -34,7 +35,10 @@ public class UserEntity implements UserDetails {
     @Column(name = "debt_id", unique = true, nullable = true)
     private String debtId;
 
+    @Column(columnDefinition = "integer default 0")
+    private int failedAttempts = 0; // Səhv ID yazma sayı
 
+    private LocalDateTime blockedUntil;
 
 
     @ElementCollection(fetch = FetchType.EAGER)

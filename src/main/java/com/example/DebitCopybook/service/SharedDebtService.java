@@ -31,6 +31,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -56,15 +57,54 @@ public class SharedDebtService {
 
     @Transactional
     public DebtResponseDto createSharedDebtRequest(SharedDebtRequestDto requestDto) {
-        Long requesterId = getCurrentUserId(); // Sorğunu göndərən (Mən)
+        Long requesterId = getCurrentUserId();
         UserEntity requester = userRepository.findById(requesterId)
                 .orElseThrow(() -> new UserNotFoundException("Sorğu göndərən istifadəçi tapılmadı."));
 
-        // 1. Qarşı tərəfi onun borc ID-si ilə tapırıq.
-        UserEntity counterparty = userRepository.findByDebtId(requestDto.getCounterpartyDebtId())
-                .orElseThrow(() -> new UserNotFoundException("'" + requestDto.getCounterpartyDebtId() + "' ID-li istifadəçi tapılmadı."));
+        // 1. TƏHLÜKƏSİZLİK: BLOKLAMA YOXLANIŞI
+        if (requester.getBlockedUntil() != null && requester.getBlockedUntil().isAfter(LocalDateTime.now())) {
+            throw new SecurityException("Çox sayda yanlış cəhd səbəbilə hesabınız müvəqqəti bloklanıb. " +
+                    "Blokun bitmə vaxtı: " + requester.getBlockedUntil());
+        }
 
-        // 2. İstifadəçinin özünə sorğu göndərməsinin qarşısını alırıq.
+        // 2. TƏHLÜKƏSİZLİK: BORC LİMİTİ YOXLANIŞI
+        long currentDebtCount = debtRepository.countConfirmedSharedDebts(requesterId);
+        int limit = requester.isAdmin() ? 100 : 15;
+
+        if (currentDebtCount >= limit) {
+            throw new InvalidRequestException("Siz maksimum borc limitinə (" + limit + ") çatmısınız. " +
+                    "Yeni borc yaratmaq üçün Adminlə əlaqə saxlayın: +994XXXXXXXXX");
+        }
+
+        // 3. QARŞI TƏRƏFİN TAPILMASI (SƏHV ID MƏNTİQİ)
+        Optional<UserEntity> counterpartyOpt = userRepository.findByDebtId(requestDto.getCounterpartyDebtId());
+
+        if (counterpartyOpt.isEmpty()) {
+            // SƏHV ID YAZILIB -> CƏHD SAYINI ARTIR
+            int attempts = requester.getFailedAttempts() + 1;
+            requester.setFailedAttempts(attempts);
+
+            // 5 DƏFƏ SƏHV OLARSA -> 24 SAAT BLOKLA
+            if (attempts >= 5) {
+                requester.setBlockedUntil(LocalDateTime.now().plusHours(24));
+                requester.setFailedAttempts(0); // Sayğacı sıfırla ki, blok bitəndə yenidən başlasın
+                userRepository.save(requester);
+                throw new SecurityException("Yanlış ID daxil etdiyiniz üçün 24 saatlıq bloklandınız.");
+            }
+
+            userRepository.save(requester); // Cəhd sayını yadda saxla
+            throw new UserNotFoundException("Daxil edilən ID (" + requestDto.getCounterpartyDebtId() + ") yanlışdır. Qalan cəhd haqqı: " + (5 - attempts));
+        }
+
+        // ID DÜZGÜNDÜR -> CƏHD SAYINI SIFIRLA
+        if (requester.getFailedAttempts() > 0) {
+            requester.setFailedAttempts(0);
+            userRepository.save(requester);
+        }
+
+        UserEntity counterparty = counterpartyOpt.get();
+
+        // Özünə sorğu göndərmək olmaz
         if (requester.getId().equals(counterparty.getId())) {
             throw new IllegalArgumentException("İstifadəçi özünə borc sorğusu göndərə bilməz.");
         }
@@ -155,23 +195,25 @@ public class SharedDebtService {
         UserEntity proposer = userRepository.findById(proposerId)
                 .orElseThrow(() -> new UserNotFoundException("Təklif göndərən istifadəçi tapılmadı."));
 
-        // 1. Dəyişdirilməsi təklif edilən əsas borcu tapırıq.
         DebtEntity debt = debtRepository.findById(debtId)
                 .orElseThrow(() -> new DebtNotFoundException("Bu ID ilə borc tapılmadı: " + debtId));
 
-        // 2. TƏHLÜKƏSİZLİK YOXLAMALARI
-        // a) Borc mütləq "CONFIRMED" statusunda olmalıdır.
         if (debt.getStatus() != DebtStatus.CONFIRMED) {
             throw new InvalidRequestException("Yalnız təsdiqlənmiş borclar üçün dəyişiklik təklif edilə bilər.");
         }
 
-        // b) Təklifi göndərən şəxs borcun tərəflərindən biri olmalıdır.
         boolean isOwner = debt.getUser().getId().equals(proposerId);
         boolean isCounterparty = debt.getCounterpartyUser().getId().equals(proposerId);
         if (!isOwner && !isCounterparty) {
             throw new SecurityException("Sizin bu borc üçün dəyişiklik təklif etməyə icazəniz yoxdur.");
         }
 
+        // --- YENİ: 3 TƏKLİF LİMİTİ ---
+        long pendingCount = proposalRepository.countPendingProposalsByDebtAndUser(debtId, proposerId, ProposalStatus.PENDING);
+        if (pendingCount >= 3) {
+            throw new InvalidRequestException("Siz bu borc üçün artıq 3 cavablanmamış təklif göndərmisiniz. " +
+                    "Zəhmət olmasa qarşı tərəfin cavab verməsini və ya vaxtın bitməsini (120 san) gözləyin.");
+        }
         // 3. Yeni dəyişiklik təklifi obyektini yaradırıq.
         DebtUpdateProposalEntity proposal = new DebtUpdateProposalEntity();
         proposal.setDebt(debt);
