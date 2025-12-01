@@ -25,7 +25,7 @@ google:
 
 jwt:
   secret-key: ${JWT_SECRET_KEY}
-  expiration: 1296000000
+  expiration: 259200000
 
 admin:
   email: ${ADMIN_EMAIL}
