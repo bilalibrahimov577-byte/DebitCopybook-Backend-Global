@@ -55,7 +55,8 @@ public class SharedDebtService {
 
     // SharedDebtService.java
 
-    @Transactional
+   // @Transactional
+   @Transactional(noRollbackFor = {UserNotFoundException.class, SecurityException.class})
     public DebtResponseDto createSharedDebtRequest(SharedDebtRequestDto requestDto) {
         Long requesterId = getCurrentUserId();
         UserEntity requester = userRepository.findById(requesterId)
