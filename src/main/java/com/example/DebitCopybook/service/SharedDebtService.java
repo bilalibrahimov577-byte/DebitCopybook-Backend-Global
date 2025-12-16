@@ -53,22 +53,20 @@ public class SharedDebtService {
         return ((UserEntity) authentication.getPrincipal()).getId();
     }
 
-    // SharedDebtService.java
 
-   // @Transactional
    @Transactional(noRollbackFor = {UserNotFoundException.class, SecurityException.class})
     public DebtResponseDto createSharedDebtRequest(SharedDebtRequestDto requestDto) {
         Long requesterId = getCurrentUserId();
         UserEntity requester = userRepository.findById(requesterId)
                 .orElseThrow(() -> new UserNotFoundException("Sorğu göndərən istifadəçi tapılmadı."));
 
-        // 1. TƏHLÜKƏSİZLİK: BLOKLAMA YOXLANIŞI
+
         if (requester.getBlockedUntil() != null && requester.getBlockedUntil().isAfter(LocalDateTime.now())) {
             throw new SecurityException("Çox sayda yanlış cəhd səbəbilə hesabınız müvəqqəti bloklanıb. " +
                     "Blokun bitmə vaxtı: " + requester.getBlockedUntil());
         }
 
-        // 2. TƏHLÜKƏSİZLİK: BORC LİMİTİ YOXLANIŞI
+
         long currentDebtCount = debtRepository.countConfirmedSharedDebts(requesterId);
         int limit = requester.isAdmin() ? 100 : 15;
 
@@ -132,8 +130,9 @@ public class SharedDebtService {
         debtEntity.setCounterpartyUser(counterparty); // Borcun ikinci tərəfi
         debtEntity.setStatus(DebtStatus.PENDING_APPROVAL); // Status: TƏSDİQ GÖZLƏYƏN
         debtEntity.setRequestExpiryTime(LocalDateTime.now(ZoneOffset.ofHours(4)).plusSeconds(120));
+        debtEntity.setCreatedAt(LocalDateTime.now(ZoneOffset.ofHours(4)));
 
-        // 4. Bazada yadda saxlayırıq.
+       // 4. Bazada yadda saxlayırıq.
         DebtEntity savedDebt = debtRepository.save(debtEntity);
 
         // 5. Frontend-ə cavab qaytarırıq.
