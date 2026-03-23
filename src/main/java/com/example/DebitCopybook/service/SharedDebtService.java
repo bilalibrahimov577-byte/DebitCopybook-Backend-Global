@@ -54,68 +54,68 @@ public class SharedDebtService {
     }
 
 
-   @Transactional(noRollbackFor = {UserNotFoundException.class, SecurityException.class})
+    @Transactional(noRollbackFor = {UserNotFoundException.class, SecurityException.class})
     public DebtResponseDto createSharedDebtRequest(SharedDebtRequestDto requestDto) {
         Long requesterId = getCurrentUserId();
         UserEntity requester = userRepository.findById(requesterId)
                 .orElseThrow(() -> new UserNotFoundException("Sorğu göndərən istifadəçi tapılmadı."));
 
-
+        // 1. Bloklanma yoxlaması
         if (requester.getBlockedUntil() != null && requester.getBlockedUntil().isAfter(LocalDateTime.now())) {
             throw new SecurityException("Çox sayda yanlış cəhd səbəbilə hesabınız müvəqqəti bloklanıb. " +
                     "Blokun bitmə vaxtı: " + requester.getBlockedUntil());
         }
 
+        // 2. Abunəlik və Limit yoxlaması (YENİ HİSSƏ)
+        LocalDateTime now = LocalDateTime.now(ZoneOffset.ofHours(4));
+        boolean hasActiveSubscription = Boolean.TRUE.equals(requester.isSubscriptionActive()) &&
+                requester.getSubscriptionEndDate() != null &&
+                requester.getSubscriptionEndDate().isAfter(now);
 
+        int limit = (requester.isAdmin() || hasActiveSubscription) ? 100 : 15;
         long currentDebtCount = debtRepository.countConfirmedSharedDebts(requesterId);
-        int limit = requester.isAdmin() ? 100 : 15;
 
         if (currentDebtCount >= limit) {
-            throw new InvalidRequestException("Siz maksimum borc limitinə (" + limit + ") çatmısınız. " +
-                    "Yeni borc yaratmaq üçün Adminlə əlaqə saxlayın: +994(50)-740-28-09");
+            if (hasActiveSubscription) {
+                throw new InvalidRequestException("Siz maksimal borc limitinə (100) çatmısınız.");
+            } else {
+                throw new InvalidRequestException(
+                        "Limitiniz dolub (" + limit + " borc).\n\n" +
+                                "YENİLİK: Artıq avtomatik ödənişlə limiti 100-ə qaldıra bilərsiniz! \n" +
+                                "Bunun üçün zəhmət olmasa Play Market-dən tətbiqi son versiyaya YENİLƏYİN."
+                );
+            }
         }
 
-        // 3. QARŞI TƏRƏFİN TAPILMASI (SƏHV ID MƏNTİQİ)
+        // 3. Qarşı tərəfin tapılması
         Optional<UserEntity> counterpartyOpt = userRepository.findByDebtId(requestDto.getCounterpartyDebtId());
 
         if (counterpartyOpt.isEmpty()) {
-            // SƏHV ID YAZILIB -> CƏHD SAYINI ARTIR
             int attempts = requester.getFailedAttempts() + 1;
             requester.setFailedAttempts(attempts);
-
-            // 5 DƏFƏ SƏHV OLARSA -> 24 SAAT BLOKLA
             if (attempts >= 5) {
                 requester.setBlockedUntil(LocalDateTime.now().plusHours(24));
-                requester.setFailedAttempts(0); // Sayğacı sıfırla ki, blok bitəndə yenidən başlasın
+                requester.setFailedAttempts(0);
                 userRepository.save(requester);
                 throw new SecurityException("Yanlış ID daxil etdiyiniz üçün 24 saatlıq bloklandınız.");
             }
-
-            userRepository.save(requester); // Cəhd sayını yadda saxla
-            throw new UserNotFoundException("Daxil edilən ID (" + requestDto.getCounterpartyDebtId() + ") yanlışdır. Qalan cəhd haqqı: " + (5 - attempts));
+            userRepository.save(requester);
+            throw new UserNotFoundException("Daxil edilən ID yanlışdır. Qalan cəhd haqqı: " + (5 - attempts));
         }
 
-        // ID DÜZGÜNDÜR -> CƏHD SAYINI SIFIRLA
         if (requester.getFailedAttempts() > 0) {
             requester.setFailedAttempts(0);
             userRepository.save(requester);
         }
 
         UserEntity counterparty = counterpartyOpt.get();
-
-        // Özünə sorğu göndərmək olmaz
         if (requester.getId().equals(counterparty.getId())) {
             throw new IllegalArgumentException("İstifadəçi özünə borc sorğusu göndərə bilməz.");
         }
 
-        // 3. Məlumatları DebtEntity-ə çeviririk.
+        // 4. Borc yaradılması
         DebtRequestDto regularRequestDto = new DebtRequestDto();
-
-        // ===== DƏYİŞİKLİK BURADADIR =====
-        // `debtorName`-i artıq requestDto-dan yox, databazadan tapdığımız `counterparty`-nin adından götürürük!
         regularRequestDto.setDebtorName(counterparty.getName());
-
-        // Qalan məlumatları köhnəsi kimi requestDto-dan götürürük
         regularRequestDto.setDebtAmount(requestDto.getDebtAmount());
         regularRequestDto.setDescription(requestDto.getDescription());
         regularRequestDto.setNotes(requestDto.getNotes());
@@ -124,20 +124,102 @@ public class SharedDebtService {
         regularRequestDto.setIsFlexibleDueDate(requestDto.getIsFlexibleDueDate());
 
         DebtEntity debtEntity = debtMapper.mapRequestDtoToEntity(regularRequestDto);
-
-        // --- ƏSAS MƏNTİQ ---
-        debtEntity.setUser(requester); // Borcun sahibi (sorğunu göndərən)
-        debtEntity.setCounterpartyUser(counterparty); // Borcun ikinci tərəfi
-        debtEntity.setStatus(DebtStatus.PENDING_APPROVAL); // Status: TƏSDİQ GÖZLƏYƏN
+        debtEntity.setUser(requester);
+        debtEntity.setCounterpartyUser(counterparty);
+        debtEntity.setStatus(DebtStatus.PENDING_APPROVAL);
         debtEntity.setRequestExpiryTime(LocalDateTime.now(ZoneOffset.ofHours(4)).plusSeconds(120));
         debtEntity.setCreatedAt(LocalDateTime.now(ZoneOffset.ofHours(4)));
 
-       // 4. Bazada yadda saxlayırıq.
         DebtEntity savedDebt = debtRepository.save(debtEntity);
-
-        // 5. Frontend-ə cavab qaytarırıq.
         return debtMapper.mapEntityToResponseDto(savedDebt);
     }
+
+
+
+//   @Transactional(noRollbackFor = {UserNotFoundException.class, SecurityException.class})
+//    public DebtResponseDto createSharedDebtRequest(SharedDebtRequestDto requestDto) {
+//        Long requesterId = getCurrentUserId();
+//        UserEntity requester = userRepository.findById(requesterId)
+//                .orElseThrow(() -> new UserNotFoundException("Sorğu göndərən istifadəçi tapılmadı."));
+//
+//
+//        if (requester.getBlockedUntil() != null && requester.getBlockedUntil().isAfter(LocalDateTime.now())) {
+//            throw new SecurityException("Çox sayda yanlış cəhd səbəbilə hesabınız müvəqqəti bloklanıb. " +
+//                    "Blokun bitmə vaxtı: " + requester.getBlockedUntil());
+//        }
+//
+//
+//        long currentDebtCount = debtRepository.countConfirmedSharedDebts(requesterId);
+//        int limit = requester.isAdmin() ? 100 : 15;
+//
+//        if (currentDebtCount >= limit) {
+//            throw new InvalidRequestException("Siz maksimum borc limitinə (" + limit + ") çatmısınız. " +
+//                    "Yeni borc yaratmaq üçün Adminlə əlaqə saxlayın: +994(50)-740-28-09");
+//        }
+//
+//        // 3. QARŞI TƏRƏFİN TAPILMASI (SƏHV ID MƏNTİQİ)
+//        Optional<UserEntity> counterpartyOpt = userRepository.findByDebtId(requestDto.getCounterpartyDebtId());
+//
+//        if (counterpartyOpt.isEmpty()) {
+//            // SƏHV ID YAZILIB -> CƏHD SAYINI ARTIR
+//            int attempts = requester.getFailedAttempts() + 1;
+//            requester.setFailedAttempts(attempts);
+//
+//            // 5 DƏFƏ SƏHV OLARSA -> 24 SAAT BLOKLA
+//            if (attempts >= 5) {
+//                requester.setBlockedUntil(LocalDateTime.now().plusHours(24));
+//                requester.setFailedAttempts(0); // Sayğacı sıfırla ki, blok bitəndə yenidən başlasın
+//                userRepository.save(requester);
+//                throw new SecurityException("Yanlış ID daxil etdiyiniz üçün 24 saatlıq bloklandınız.");
+//            }
+//
+//            userRepository.save(requester); // Cəhd sayını yadda saxla
+//            throw new UserNotFoundException("Daxil edilən ID (" + requestDto.getCounterpartyDebtId() + ") yanlışdır. Qalan cəhd haqqı: " + (5 - attempts));
+//        }
+//
+//        // ID DÜZGÜNDÜR -> CƏHD SAYINI SIFIRLA
+//        if (requester.getFailedAttempts() > 0) {
+//            requester.setFailedAttempts(0);
+//            userRepository.save(requester);
+//        }
+//
+//        UserEntity counterparty = counterpartyOpt.get();
+//
+//        // Özünə sorğu göndərmək olmaz
+//        if (requester.getId().equals(counterparty.getId())) {
+//            throw new IllegalArgumentException("İstifadəçi özünə borc sorğusu göndərə bilməz.");
+//        }
+//
+//        // 3. Məlumatları DebtEntity-ə çeviririk.
+//        DebtRequestDto regularRequestDto = new DebtRequestDto();
+//
+//        // ===== DƏYİŞİKLİK BURADADIR =====
+//        // `debtorName`-i artıq requestDto-dan yox, databazadan tapdığımız `counterparty`-nin adından götürürük!
+//        regularRequestDto.setDebtorName(counterparty.getName());
+//
+//        // Qalan məlumatları köhnəsi kimi requestDto-dan götürürük
+//        regularRequestDto.setDebtAmount(requestDto.getDebtAmount());
+//        regularRequestDto.setDescription(requestDto.getDescription());
+//        regularRequestDto.setNotes(requestDto.getNotes());
+//        regularRequestDto.setDueYear(requestDto.getDueYear());
+//        regularRequestDto.setDueMonth(requestDto.getDueMonth());
+//        regularRequestDto.setIsFlexibleDueDate(requestDto.getIsFlexibleDueDate());
+//
+//        DebtEntity debtEntity = debtMapper.mapRequestDtoToEntity(regularRequestDto);
+//
+//        // --- ƏSAS MƏNTİQ ---
+//        debtEntity.setUser(requester); // Borcun sahibi (sorğunu göndərən)
+//        debtEntity.setCounterpartyUser(counterparty); // Borcun ikinci tərəfi
+//        debtEntity.setStatus(DebtStatus.PENDING_APPROVAL); // Status: TƏSDİQ GÖZLƏYƏN
+//        debtEntity.setRequestExpiryTime(LocalDateTime.now(ZoneOffset.ofHours(4)).plusSeconds(120));
+//        debtEntity.setCreatedAt(LocalDateTime.now(ZoneOffset.ofHours(4)));
+//
+//       // 4. Bazada yadda saxlayırıq.
+//        DebtEntity savedDebt = debtRepository.save(debtEntity);
+//
+//        // 5. Frontend-ə cavab qaytarırıq.
+//        return debtMapper.mapEntityToResponseDto(savedDebt);
+//    }
 
     @Transactional
     public DebtResponseDto respondToSharedDebtRequest(Long debtId, SharedDebtResponseRequestDto responseDto) {

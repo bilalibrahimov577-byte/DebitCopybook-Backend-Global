@@ -22,6 +22,9 @@ google:
     client-id:
       android: ${GOOGLE_OAUTH_CLIENT_ID_ANDROID}
       web: ${GOOGLE_OAUTH_CLIENT_ID_WEB}
+  play-store:
+    package-name: ${GOOGLE_PLAY_STORE_PACKAGE_NAME}
+GOOGLE_APPLICATION_CREDENTIALS: ${GOOGLE_APPLICATION_CREDENTIALS}
 
 jwt:
   secret-key: ${JWT_SECRET_KEY}

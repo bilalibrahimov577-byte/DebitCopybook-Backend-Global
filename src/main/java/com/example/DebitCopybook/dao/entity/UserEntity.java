@@ -90,4 +90,21 @@ public class UserEntity implements UserDetails {
     public boolean isEnabled() {
         return true;
     }
+
+
+
+    @Column(name = "is_premium", columnDefinition = "boolean default false")
+    private boolean isPremium = false;
+
+    @Column(name = "purchase_token")
+    private String purchaseToken; // Google-dan gələn doğrulama tokeni
+
+    @Column(name = "subscription_type")
+    private String subscriptionType; // Məsələn: "LIFETIME", "MONTHLY" və s.
+
+    @Column(name = "subscription_end_date")
+    private LocalDateTime subscriptionEndDate;
+
+    @Column(name = "is_subscription_active")
+    private boolean isSubscriptionActive = false;
 }

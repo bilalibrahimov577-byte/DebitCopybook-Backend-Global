@@ -75,13 +75,35 @@ public class DebtService {
         UserEntity currentUser = userRepository.findById(userId)
                 .orElseThrow(() -> new DebtNotFoundException("İstifadəçi tapılmadı ID: " + userId));
 
-        int debtLimit = currentUser.isAdmin() ? 100 : 15;
+        // 1. Abunəlik statusunu yoxlayırıq (Bakı vaxtı ilə)
+        LocalDateTime now = LocalDateTime.now(ZoneOffset.ofHours(4));
+
+        // isSubscriptionActive null ola bilər deyə Boolean.TRUE.equals istifadə edirik (Safe check)
+        boolean hasActiveSubscription = Boolean.TRUE.equals(currentUser.isSubscriptionActive()) &&
+                currentUser.getSubscriptionEndDate() != null &&
+                currentUser.getSubscriptionEndDate().isAfter(now);
+
+        // 2. Limiti müəyyən edirik (Admin isə 100, Premium isə 100, yoxsa 15)
+        int debtLimit = (currentUser.isAdmin() || hasActiveSubscription) ? 100 : 15;
+
         long currentDebtCount = debtRepository.countByUserId(userId);
+
+        // 3. Limit yoxlaması və Köhnə/Yeni versiya mesajı
         if (currentDebtCount >= debtLimit) {
-            throw new IllegalStateException("Siz artıq 15 borc limitinə çatmısınız. \n Daha çox borc əlavə etmək üçün \n 077-541-81-56 Whatsapp nömrəsi ilə \n əlaqə saxlaya bilərsiniz.");
-        }                                          //Siz artıq 15 borc limitinə çatmısınız.
-                                      //Daha çox borc əlavə etmək üçün bizimlə əlaqə saxlaya bilərsiniz.
-                                   //"Sizin borc siyahınızda limit dolub (" + debtLimit + " borc). ..."
+            if (hasActiveSubscription) {
+                // Əgər artıq premiumdursa amma 100-ü də keçibsə
+                throw new IllegalStateException("Siz maksimal borc limitinə (100) çatmısınız.");
+            } else {
+                // Köhnə versiya istifadəçiləri üçün yönləndirmə mesajı
+                throw new IllegalStateException(
+                        "Limitiniz dolub (" + debtLimit + " borc).\n\n" +
+                                "YENİLİK: Artıq avtomatik ödənişlə limiti 100-ə qaldıra bilərsiniz! \n" +
+                                "Bunun üçün zəhmət olmasa Play Market-dən tətbiqi son versiyaya YENİLƏYİN."
+                );
+            }
+        }
+
+        // --- Borc yaratma məntiqi eyni qalır ---
         String trimmedName = requestDto.getDebtorName().trim();
         Optional<DebtEntity> existingDebt = debtRepository.findPersonalDebtByName(userId, trimmedName);
         if (existingDebt.isPresent()) {
@@ -99,13 +121,56 @@ public class DebtService {
         DebtEntity savedEntity = debtRepository.save(debtEntity);
 
         DebtHistoryEntity historyEntry = DebtHistoryEntity.builder()
-                .debt(savedEntity).eventType(HistoryEventType.CREATED).description("Borc yaradıldı.")
-                .amount(savedEntity.getDebtAmount()).eventDate(LocalDateTime.now(ZoneOffset.ofHours(4)))
+                .debt(savedEntity)
+                .eventType(HistoryEventType.CREATED)
+                .description("Borc yaradıldı.")
+                .amount(savedEntity.getDebtAmount())
+                .eventDate(LocalDateTime.now(ZoneOffset.ofHours(4)))
                 .build();
         debtHistoryRepository.save(historyEntry);
 
         return mapToLegacy(savedEntity);
     }
+
+
+
+//    @Transactional
+//    public LegacyDebtResponseDto createDebt(DebtRequestDto requestDto) {
+//        Long userId = getCurrentUserId();
+//        UserEntity currentUser = userRepository.findById(userId)
+//                .orElseThrow(() -> new DebtNotFoundException("İstifadəçi tapılmadı ID: " + userId));
+//
+//        int debtLimit = currentUser.isAdmin() ? 100 : 15;
+//        long currentDebtCount = debtRepository.countByUserId(userId);
+//        if (currentDebtCount >= debtLimit) {
+//            throw new IllegalStateException("Siz artıq 15 borc limitinə çatmısınız. \n Daha çox borc əlavə etmək üçün \n 077-541-81-56 Whatsapp nömrəsi ilə \n əlaqə saxlaya bilərsiniz.");
+//        }                                          //Siz artıq 15 borc limitinə çatmısınız.
+//                                      //Daha çox borc əlavə etmək üçün bizimlə əlaqə saxlaya bilərsiniz.
+//                                   //"Sizin borc siyahınızda limit dolub (" + debtLimit + " borc). ..."
+//        String trimmedName = requestDto.getDebtorName().trim();
+//        Optional<DebtEntity> existingDebt = debtRepository.findPersonalDebtByName(userId, trimmedName);
+//        if (existingDebt.isPresent()) {
+//            throw new IllegalArgumentException("'" + trimmedName + "' adlı borcalan artıq bu siyahıda mövcuddur...");
+//        }
+//
+//        if (requestDto.getDebtAmount().compareTo(BigDecimal.ZERO) <= 0) {
+//            throw new IllegalArgumentException("Borc məbləği 0 manatdan çox olmalıdır.");
+//        }
+//
+//        requestDto.setDebtorName(trimmedName);
+//
+//        DebtEntity debtEntity = debtMapper.mapRequestDtoToEntity(requestDto);
+//        debtEntity.setUser(currentUser);
+//        DebtEntity savedEntity = debtRepository.save(debtEntity);
+//
+//        DebtHistoryEntity historyEntry = DebtHistoryEntity.builder()
+//                .debt(savedEntity).eventType(HistoryEventType.CREATED).description("Borc yaradıldı.")
+//                .amount(savedEntity.getDebtAmount()).eventDate(LocalDateTime.now(ZoneOffset.ofHours(4)))
+//                .build();
+//        debtHistoryRepository.save(historyEntry);
+//
+//        return mapToLegacy(savedEntity);
+//    }
     public List<LegacyDebtResponseDto> getAllDebts() {
         Long userId = getCurrentUserId();
 
@@ -121,35 +186,6 @@ public class DebtService {
                 .orElseThrow(() -> new DebtNotFoundException("Borc ID " + id + " ilə tapılmadı..."));
         return mapToLegacy(debtEntity);
     }
-
-//    @Transactional
-//    public LegacyDebtResponseDto makePayment(Long id, BigDecimal paymentAmount) {
-//        if (paymentAmount == null || paymentAmount.compareTo(BigDecimal.ZERO) <= 0) {
-//            throw new IllegalArgumentException("Ödəniş məbləği müsbət olmalıdır.");
-//        }
-//        Long userId = getCurrentUserId();
-//        DebtEntity existingEntity = debtRepository.findByIdAndUserId(id, userId)
-//                .orElseThrow(() -> new DebtNotFoundException("Borc ID " + id + " ilə tapılmadı..."));
-//        if (existingEntity.getStatus() == DebtStatus.CONFIRMED) {
-//            throw new InvalidRequestException("Qarşılıqlı təsdiqlənmiş borcları bu bölmədən dəyişmək mümkün deyil...");
-//        }
-//        if (paymentAmount.compareTo(existingEntity.getDebtAmount()) > 0) {
-//            throw new IllegalArgumentException("Ödəniş məbləği mövcud borcdan çox ola bilməz.");
-//        }
-//
-//        // ... (Tarixçəyə yazma) ...
-//
-//        BigDecimal newDebt = existingEntity.getDebtAmount().subtract(paymentAmount);
-//        if (newDebt.compareTo(BigDecimal.ZERO) <= 0) {
-//            debtHistoryRepository.deleteAll(debtHistoryRepository.findAllByDebtIdOrderByEventDateDesc(id));
-//            debtRepository.delete(existingEntity);
-//            return null;
-//        } else {
-//            existingEntity.setDebtAmount(newDebt);
-//            DebtEntity updatedEntity = debtRepository.save(existingEntity);
-//            return mapToLegacy(updatedEntity);
-//        }
-//    }
 
 
     @Transactional
@@ -212,9 +248,6 @@ public class DebtService {
     }
 
 
-
-
-
     @Transactional
     public void deleteDebt(Long id) {
         Long userId = getCurrentUserId();
@@ -245,46 +278,6 @@ public class DebtService {
         return mapListToLegacy(debtEntities);
     }
 
-
-
-
-
-//    @Transactional
-//    public DebtResponseDto updateDebt(Long id, DebtRequestDto requestDto) {
-//        Long userId = getCurrentUserId();
-//
-//        // 1. Dəyişdiriləcək borcu bazadan tapırıq
-//        DebtEntity existingEntity = debtRepository.findByIdAndUserId(id, userId)
-//                .orElseThrow(() -> new DebtNotFoundException("Borc ID " + id + " ilə tapılmadı..."));
-//
-//        // 2. Qarşılıqlı borcların buradan dəyişdirilməsinin qarşısını alırıq
-//        if (existingEntity.getStatus() == DebtStatus.CONFIRMED) {
-//            throw new InvalidRequestException("Qarşılıqlı təsdiqlənmiş borcları bu bölmədən dəyişmək mümkün deyil...");
-//        }
-//
-//        // 3. ===== ƏSAS DÜZƏLİŞ BURADADIR =====
-//        // Mapper-in köməkçi metodu ilə requestDto-dan gələn yeni məlumatları
-//        // bazadan tapdığımız köhnə entity-nin üzərinə yazırıq.
-//        debtMapper.updateEntityFromRequestDto(requestDto, existingEntity);
-//
-//        // 4. Dəyişiklikləri tarixçəyə yazırıq (bu hissəni öz koduna uyğunlaşdır)
-//        // Məsələn:
-//        DebtHistoryEntity history = new DebtHistoryEntity();
-//        history.setDebt(existingEntity);
-//        history.setEventType(HistoryEventType.UPDATED);
-//        history.setDescription("Borc məlumatları yeniləndi.");
-//        history.setEventDate(LocalDateTime.now(ZoneOffset.ofHours(4)));
-//        debtHistoryRepository.save(history);
-//
-//
-//        // 5. Artıq üzəri yenilənmiş entity-ni bazada yadda saxlayırıq
-//        DebtEntity updatedEntity = debtRepository.save(existingEntity);
-//
-//        // 6. Nəticəni frontend-ə uyğun DTO-ya çevirib qaytarırıq
-//        // Qeyd: Əgər sən hələ də LegacyDebtResponseDto istifadə edirsənsə, mapEntityToResponseDto yerinə onu yaz.
-//        // Amma bütün sistemin eyni DTO ilə işləməsi daha yaxşıdır.
-//        return debtMapper.mapEntityToResponseDto(updatedEntity);
-//    }
 
 
 
@@ -390,34 +383,6 @@ public class DebtService {
     }
 
 
-
-
-
-
-
-
-
-//    @Transactional
-//    public LegacyDebtResponseDto increaseDebt(Long id, BigDecimal amountToAdd) {
-//        if (amountToAdd == null || amountToAdd.compareTo(BigDecimal.ZERO) <= 0) {
-//            throw new IllegalArgumentException("Əlavə olunacaq məbləğ müsbət olmalıdır.");
-//        }
-//        Long userId = getCurrentUserId();
-//        DebtEntity existingEntity = debtRepository.findByIdAndUserId(id, userId)
-//                .orElseThrow(() -> new DebtNotFoundException("Borc ID " + id + " ilə tapılmadı..."));
-//        if (existingEntity.getStatus() == DebtStatus.CONFIRMED) {
-//            throw new InvalidRequestException("Qarşılıqlı təsdiqlənmiş borcları bu bölmədən dəyişmək mümkün deyil...");
-//        }
-//
-//        BigDecimal oldAmount = existingEntity.getDebtAmount();
-//        BigDecimal newDebtAmount = oldAmount.add(amountToAdd);
-//        existingEntity.setDebtAmount(newDebtAmount);
-//        DebtEntity updatedEntity = debtRepository.save(existingEntity);
-//
-//        // ... (tarixçəyə yazma) ...
-//        return mapToLegacy(updatedEntity);
-//    }
-
     @Transactional
     public LegacyDebtResponseDto increaseDebt(Long id, BigDecimal amountToAdd) {
         // 1. Validasiyalar
@@ -457,36 +422,6 @@ public class DebtService {
     }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//    public List<DebtHistoryResponseDto> getDebtHistory(Long debtId) {
-//        Long userId = getCurrentUserId();
-//        debtRepository.findByIdAndUserId(debtId, userId)
-//                .orElseThrow(() -> new DebtNotFoundException("Borc ID " + debtId + " ilə tapılmadı..."));
-//        List<DebtHistoryEntity> historyEntities = debtHistoryRepository.findAllByDebtIdOrderByEventDateDesc(debtId);
-//        return debtHistoryMapper.toDtoList(historyEntities);
-//    }
 
 
     public List<DebtHistoryResponseDto> getDebtHistory(Long debtId) {
