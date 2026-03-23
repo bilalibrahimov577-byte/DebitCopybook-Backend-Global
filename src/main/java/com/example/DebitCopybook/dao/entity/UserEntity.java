@@ -106,5 +106,5 @@ public class UserEntity implements UserDetails {
     private LocalDateTime subscriptionEndDate;
 
     @Column(name = "is_subscription_active")
-    private boolean isSubscriptionActive = false;
+    private Boolean isSubscriptionActive = false;
 }
