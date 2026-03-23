@@ -8,11 +8,20 @@ spring:
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
+      # Martın 2-dəki stabil halda 'update' qalsın, amma ehtiyatlı ol
       ddl-auto: update
+    show-sql: true # SQL-ləri logda görmək üçün
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
-    show-sql: false
+        format_sql: true # SQL-ləri oxunaqlı (alt-alta) çıxarır
+        highlight_sql: true # Terminalda SQL-i rəngli göstərir
+
+# Log səviyyəsini artırırıq ki, binding parametrlərini (məs. ID-ləri) görəsən
+logging:
+  level:
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
 
 server:
   port: 8080
@@ -29,3 +38,38 @@ jwt:
 
 admin:
   email: ${ADMIN_EMAIL}
+
+
+
+#spring:
+#  application:
+#    name: DebitCopybook
+#  datasource:
+#    url: ${DB_URL}
+#    username: ${DB_USERNAME}
+#    password: ${DB_PASSWORD}
+#    driver-class-name: org.postgresql.Driver
+#  jpa:
+#    hibernate:
+#      ddl-auto: update
+#    properties:
+#      hibernate:
+#        dialect: org.hibernate.dialect.PostgreSQLDialect
+#    show-sql: true
+#
+#
+#server:
+#  port: 8080
+#
+#google:
+#  oauth:
+#    client-id:
+#      android: ${GOOGLE_OAUTH_CLIENT_ID_ANDROID}
+#      web: ${GOOGLE_OAUTH_CLIENT_ID_WEB}
+#
+#jwt:
+#  secret-key: ${JWT_SECRET_KEY}
+#  expiration: 1296000000
+#
+#admin:
+#  email: ${ADMIN_EMAIL}
