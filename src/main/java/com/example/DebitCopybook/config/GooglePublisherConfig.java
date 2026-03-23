@@ -10,9 +10,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.security.GeneralSecurityException;
 import java.util.Collections;
 
@@ -28,9 +26,12 @@ public class GooglePublisherConfig {
 
     @Bean
     public AndroidPublisher androidPublisher() throws IOException, GeneralSecurityException {
-        // ClassPathResource yerinə FileInputStream istifadə edirik ki, sistemdəki istənilən yolu oxuya bilsin
-        InputStream credentialsStream = new FileInputStream(credentialsPath);
+        File file = new File(credentialsPath);
+        if (!file.exists()) {
+            throw new FileNotFoundException("Fayl tapılmadı! Baxılan yol: " + file.getAbsolutePath());
+        }
 
+        InputStream credentialsStream = new FileInputStream(file);
         GoogleCredentials credentials = GoogleCredentials.fromStream(credentialsStream)
                // .createScoped(Collections.singleton(AndroidPublisherScopes.ANDROID_PUBLISHER));
                 .createScoped(Collections.singleton(AndroidPublisherScopes.ANDROIDPUBLISHER));
