@@ -14,4 +14,7 @@ public class PaymentRequestDto {
 
     @NotBlank(message = "Product ID boş ola bilməz")
     private String productId; // Məsələn: "monthly_limit_100"
+
+    @Positive(message = "Məbləğ müsbət olmalıdır")
+    private BigDecimal amount;
 }
