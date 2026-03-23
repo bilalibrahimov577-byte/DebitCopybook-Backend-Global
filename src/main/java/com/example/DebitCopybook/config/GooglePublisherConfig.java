@@ -31,7 +31,8 @@ public class GooglePublisherConfig {
     @Bean
     public AndroidPublisher androidPublisher() throws IOException, GeneralSecurityException {
         // MAL BAZARI proyektindəki kimi konkret yolu bura yazırıq
-        String filePath = "/etc/secrets/google-key.json";
+       // String filePath = "/etc/secrets/google-key.json";
+        String filePath =  "/etc/secrets/debitcopybook-backend-1224a0e5082.json";
 
         File file = new File(filePath);
         if (!file.exists()) {
