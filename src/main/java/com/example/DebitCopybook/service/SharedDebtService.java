@@ -68,7 +68,7 @@ public class SharedDebtService {
 
         // 2. Abunəlik və Limit yoxlaması (YENİ HİSSƏ)
         LocalDateTime now = LocalDateTime.now(ZoneOffset.ofHours(4));
-        boolean hasActiveSubscription = Boolean.TRUE.equals(requester.isSubscriptionActive()) &&
+        boolean hasActiveSubscription = Boolean.TRUE.equals(requester.getSubscriptionActive()) &&
                 requester.getSubscriptionEndDate() != null &&
                 requester.getSubscriptionEndDate().isAfter(now);
 

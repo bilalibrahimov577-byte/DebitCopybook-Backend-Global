@@ -79,7 +79,7 @@ public class DebtService {
         LocalDateTime now = LocalDateTime.now(ZoneOffset.ofHours(4));
 
         // isSubscriptionActive null ola bilər deyə Boolean.TRUE.equals istifadə edirik (Safe check)
-        boolean hasActiveSubscription = Boolean.TRUE.equals(currentUser.isSubscriptionActive()) &&
+        boolean hasActiveSubscription = Boolean.TRUE.equals(currentUser.getSubscriptionActive()) &&
                 currentUser.getSubscriptionEndDate() != null &&
                 currentUser.getSubscriptionEndDate().isAfter(now);
 
