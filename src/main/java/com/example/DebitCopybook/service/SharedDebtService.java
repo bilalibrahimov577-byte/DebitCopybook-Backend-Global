@@ -42,6 +42,7 @@ public class SharedDebtService {
     private final DebtMapper debtMapper;
     private final DebtUpdateProposalRepository proposalRepository;
     private final DebtHistoryRepository debtHistoryRepository;
+    private final SubscriptionService subscriptionService;
 
 
     // Mövcud DebtService-də olan getCurrentUserId metodunu bura da əlavə edirik.
@@ -68,7 +69,10 @@ public class SharedDebtService {
 
 
         long currentDebtCount = debtRepository.countConfirmedSharedDebts(requesterId);
-        int limit = requester.isAdmin() ? 100 : 15;
+
+       boolean hasSub = subscriptionService.hasActiveSubscription(requesterId);
+       int limit = (requester.isAdmin() || hasSub) ? 100 : 15;
+        //int limit = requester.isAdmin() ? 100 : 15;
 
         if (currentDebtCount >= limit) {
             throw new InvalidRequestException("Siz maksimum borc limitinə (" + limit + ") çatmısınız. " +
@@ -176,7 +180,10 @@ public class SharedDebtService {
             // ===== YENİ HİSSƏ: LİMİT YOXLAMASI BURADADIR =====
             // Sən qəbul etməyə çalışırsan, amma əvvəlcə baxaq görək yerin varmı?
             long currentDebtCount = debtRepository.countConfirmedSharedDebts(responderId);
-            int limit = responder.isAdmin() ? 100 : 15;
+            boolean hasSub = subscriptionService.hasActiveSubscription(responderId);
+            int limit = (responder.isAdmin() || hasSub) ? 100 : 15;
+
+          //  int limit = responder.isAdmin() ? 100 : 15;
 
             if (currentDebtCount >= limit) {
                 // Limit dolubsa, qəbul etməyə icazə vermirik
