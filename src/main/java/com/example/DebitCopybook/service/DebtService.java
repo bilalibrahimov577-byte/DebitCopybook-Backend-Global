@@ -40,6 +40,7 @@ public class DebtService {
     private final UserRepository userRepository;
     private final DebtHistoryRepository debtHistoryRepository;
     private final DebtHistoryMapper debtHistoryMapper;
+    private final SubscriptionService subscriptionService;
 
     private LegacyDebtResponseDto mapToLegacy(DebtEntity entity) {
         if (entity == null) return null;
@@ -75,7 +76,10 @@ public class DebtService {
         UserEntity currentUser = userRepository.findById(userId)
                 .orElseThrow(() -> new DebtNotFoundException("İstifadəçi tapılmadı ID: " + userId));
 
-        int debtLimit = currentUser.isAdmin() ? 100 : 15;
+        boolean hasSub = subscriptionService.hasActiveSubscription(userId); // respondentId və ya currentUser.getId()
+        int debtLimit = (currentUser.isAdmin() || hasSub) ? 100 : 15;
+
+      //  int debtLimit = currentUser.isAdmin() ? 100 : 15;
         long currentDebtCount = debtRepository.countByUserId(userId);
         if (currentDebtCount >= debtLimit) {
             throw new IllegalStateException("Siz artıq 15 borc limitinə çatmısınız. \n Daha çox borc əlavə etmək üçün \n 077-541-81-56 Whatsapp nömrəsi ilə \n əlaqə saxlaya bilərsiniz.");
