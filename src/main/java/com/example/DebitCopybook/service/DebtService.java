@@ -82,7 +82,7 @@ public class DebtService {
       //  int debtLimit = currentUser.isAdmin() ? 100 : 15;
         long currentDebtCount = debtRepository.countByUserId(userId);
         if (currentDebtCount >= debtLimit) {
-            throw new IllegalStateException("Siz artıq 15 borc limitinə çatmısınız. \n Daha çox borc əlavə etmək üçün \n 077-541-81-56 Whatsapp nömrəsi ilə \n əlaqə saxlaya bilərsiniz.");
+            throw new IllegalStateException("Siz artıq  borc limitinə çatmısınız. \n Daha çox borc əlavə etmək üçün \n PLAY MARKET-Ə DAXİL OLUB  \n TƏTBİQİ YENİLƏYİN");
         }                                          //Siz artıq 15 borc limitinə çatmısınız.
                                       //Daha çox borc əlavə etmək üçün bizimlə əlaqə saxlaya bilərsiniz.
                                    //"Sizin borc siyahınızda limit dolub (" + debtLimit + " borc). ..."
