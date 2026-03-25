@@ -71,7 +71,7 @@ public class SharedDebtService {
         long currentDebtCount = debtRepository.countConfirmedSharedDebts(requesterId);
 
        boolean hasSub = subscriptionService.hasActiveSubscription(requesterId);
-       int limit = (requester.isAdmin() || hasSub) ? 100 : 15;
+       int limit = (requester.isAdmin() || hasSub) ? 100 : 3;
         //int limit = requester.isAdmin() ? 100 : 15;
 
         if (currentDebtCount >= limit) {
@@ -181,7 +181,7 @@ public class SharedDebtService {
             // Sən qəbul etməyə çalışırsan, amma əvvəlcə baxaq görək yerin varmı?
             long currentDebtCount = debtRepository.countConfirmedSharedDebts(responderId);
             boolean hasSub = subscriptionService.hasActiveSubscription(responderId);
-            int limit = (responder.isAdmin() || hasSub) ? 100 : 15;
+            int limit = (responder.isAdmin() || hasSub) ? 100 : 3;
 
           //  int limit = responder.isAdmin() ? 100 : 15;
 
