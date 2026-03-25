@@ -25,7 +25,8 @@ public class SubscriptionScheduler {
      * Cron: saniyə dəqiqə saat gün ay həftənin günü
      */
     //@Scheduled(cron = "0 50 12 * * ?", zone = "Asia/Baku")
-    @Scheduled(fixedRate = 60000)
+   // @Scheduled(fixedRate = 60000)
+    @Scheduled(cron = "0 0 */6 * * ?", zone = "Asia/Baku")
     @Transactional
     public void deactivateExpiredSubscriptions() {
         log.info("Abunəliklərin təmizlənməsi prosesi başladı...");
