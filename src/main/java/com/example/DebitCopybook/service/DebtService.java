@@ -82,10 +82,8 @@ public class DebtService {
       //  int debtLimit = currentUser.isAdmin() ? 100 : 15;
         long currentDebtCount = debtRepository.countByUserId(userId);
         if (currentDebtCount >= debtLimit) {
-            throw new IllegalStateException("Siz artıq  borc limitinə çatmısınız. \n Daha çox borc əlavə etmək üçün \n PLAY MARKET-Ə DAXİL OLUB  \n TƏTBİQİ YENİLƏYİN");
-        }                                          //Siz artıq 15 borc limitinə çatmısınız.
-                                      //Daha çox borc əlavə etmək üçün bizimlə əlaqə saxlaya bilərsiniz.
-                                   //"Sizin borc siyahınızda limit dolub (" + debtLimit + " borc). ..."
+            throw new IllegalStateException("Siz artıq  borc limitinə çatmısınız. \n Daha çox borc əlavə etmək üçün \n Premium sözünü görürsüzsə premiuma keçin \n ayda təxminən 50 QƏPİK\n əgər premium sözü yoxdursa\n PLAY MARKET-Ə DAXİL OLUB  TƏTBİQİ YENİLƏYİN");
+        }
         String trimmedName = requestDto.getDebtorName().trim();
         Optional<DebtEntity> existingDebt = debtRepository.findPersonalDebtByName(userId, trimmedName);
         if (existingDebt.isPresent()) {
