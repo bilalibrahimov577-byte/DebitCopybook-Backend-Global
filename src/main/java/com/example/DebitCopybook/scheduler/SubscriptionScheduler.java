@@ -24,7 +24,8 @@ public class SubscriptionScheduler {
      * Hər gecə saat 03:00-da işləyir (Bakı vaxtı ilə).
      * Cron: saniyə dəqiqə saat gün ay həftənin günü
      */
-    @Scheduled(cron = "0 50 12 * * ?", zone = "Asia/Baku")
+    //@Scheduled(cron = "0 50 12 * * ?", zone = "Asia/Baku")
+    @Scheduled(fixedRate = 60000)
     @Transactional
     public void deactivateExpiredSubscriptions() {
         log.info("Abunəliklərin təmizlənməsi prosesi başladı...");
