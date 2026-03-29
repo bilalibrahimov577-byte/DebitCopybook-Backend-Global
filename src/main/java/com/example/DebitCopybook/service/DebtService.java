@@ -77,7 +77,7 @@ public class DebtService {
                 .orElseThrow(() -> new DebtNotFoundException("İstifadəçi tapılmadı ID: " + userId));
 
         boolean hasSub = subscriptionService.hasActiveSubscription(userId); // respondentId və ya currentUser.getId()
-        int debtLimit = (currentUser.isAdmin() || hasSub) ? 100 : 3;
+        int debtLimit = (currentUser.isAdmin() || hasSub) ? 100 : 8;
 
       //  int debtLimit = currentUser.isAdmin() ? 100 : 15;
         long currentDebtCount = debtRepository.countByUserId(userId);
