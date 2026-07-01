@@ -24,8 +24,8 @@ public class SubscriptionScheduler {
     private final SubscriptionRepository subscriptionRepository;
     private final GooglePlayService googlePlayService;
 
-   // @Scheduled(cron = "0 0 */6 * * ?", zone = "Asia/Baku")
-   @Scheduled(fixedRate = 300000)
+    @Scheduled(cron = "0 0 */6 * * ?", zone = "Asia/Baku")
+  // @Scheduled(fixedRate = 300000)
     @Transactional
     public void deactivateExpiredSubscriptions() {
         log.info("Abunəliklərin yoxlanması prosesi başladı...");
@@ -74,43 +74,3 @@ public class SubscriptionScheduler {
 
 }
 
-
-
-
-
-
-
-
-
-//    /**
-//     * Hər gecə saat 03:00-da işləyir (Bakı vaxtı ilə).
-//     * Cron: saniyə dəqiqə saat gün ay həftənin günü
-//     */
-//    //@Scheduled(cron = "0 50 12 * * ?", zone = "Asia/Baku")
-//   // @Scheduled(fixedRate = 60000)
-//    @Scheduled(cron = "0 0 */6 * * ?", zone = "Asia/Baku")
-//    @Transactional
-//    public void deactivateExpiredSubscriptions() {
-//        log.info("Abunəliklərin təmizlənməsi prosesi başladı...");
-//
-//        // Bakı vaxtı ilə cari zamanı alırıq
-//        LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Baku"));
-//
-//        // Vaxtı bitmiş və hələ də aktiv olanları tapırıq
-//        List<SubscriptionEntity> expiredSubs =
-//                subscriptionRepository.findAllByExpiryTimeBeforeAndIsActiveTrue(now);
-//
-//        if (!expiredSubs.isEmpty()) {
-//            for (SubscriptionEntity sub : expiredSubs) {
-//                sub.setIsActive(false);
-//                log.info("İstifadəçi ID: {} üçün abunəlik vaxtı bitdiyi üçün ləğv edildi. Bitmə vaxtı idi: {}",
-//                        sub.getUser().getId(), sub.getExpiryTime());
-//            }
-//            // Hamısını birdən bazada yeniləyirik
-//            subscriptionRepository.saveAll(expiredSubs);
-//            log.info("Cəmi {} abunəlik passiv edildi.", expiredSubs.size());
-//        } else {
-//            log.info("Vaxtı bitmiş abunəlik tapılmadı.");
-//        }
-//    }
-//}
