@@ -50,6 +50,16 @@ public class GooglePlayService {
 
         return purchase;
     }
+
+
+    /**
+     * Yalnız statusu oxumaq üçün - acknowledge etmir.
+     * Scheduler-də mövcud abunəliyin Google-dakı real vəziyyətini yoxlamaq üçün istifadə olunur.
+     */
+    public SubscriptionPurchase getSubscriptionStatus(String subscriptionId, String purchaseToken) throws Exception {
+        return androidPublisher.purchases().subscriptions()
+                .get(packageName, subscriptionId, purchaseToken).execute();
+    }
 }
 
 
