@@ -3,6 +3,7 @@ package com.example.DebitCopybook.controller;
 import com.example.DebitCopybook.model.request.PaymentRequestDto;
 import com.example.DebitCopybook.model.response.DebtHistoryResponseDto;
 import com.example.DebitCopybook.model.request.DebtRequestDto;
+import com.example.DebitCopybook.model.response.DebtResponseDto;
 import com.example.DebitCopybook.model.response.LegacyDebtResponseDto; // DƏYİŞİKLİK
 import com.example.DebitCopybook.service.DebtService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -53,12 +54,22 @@ public class DebtController {
         return ResponseEntity.ok(debts);
     }
 
+//   @Operation(summary = "Borc barədə məlumatları dəyiş")
+//    @PutMapping("/{id}")
+//    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
+//    public ResponseEntity<LegacyDebtResponseDto> updateDebt(@PathVariable Long id, @Valid @RequestBody DebtRequestDto debtRequestDto) {
+//       return ResponseEntity.ok(debtService.updateDebt(id, debtRequestDto));
+//   }
+
     @Operation(summary = "Borc barədə məlumatları dəyiş")
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
-    public ResponseEntity<LegacyDebtResponseDto> updateDebt(@PathVariable Long id, @Valid @RequestBody DebtRequestDto debtRequestDto) {
+    public ResponseEntity<DebtResponseDto> updateDebt(@PathVariable Long id, @Valid @RequestBody DebtRequestDto debtRequestDto) {
         return ResponseEntity.ok(debtService.updateDebt(id, debtRequestDto));
     }
+
+
+
 
     @Operation(summary = "Borca ödəniş et")
     @PostMapping("/{id}/payments")
