@@ -4,17 +4,20 @@ import com.example.DebitCopybook.model.request.PaymentRequestDto;
 import com.example.DebitCopybook.model.response.DebtHistoryResponseDto;
 import com.example.DebitCopybook.model.request.DebtRequestDto;
 import com.example.DebitCopybook.model.response.DebtResponseDto;
+import com.example.DebitCopybook.model.response.DebtSummaryResponseDto;
 import com.example.DebitCopybook.model.response.LegacyDebtResponseDto; // DƏYİŞİKLİK
 import com.example.DebitCopybook.service.DebtService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import org.springframework.validation.annotation.Validated;
 import jakarta.validation.constraints.Max;
@@ -146,5 +149,16 @@ public class DebtController {
     public ResponseEntity<List<LegacyDebtResponseDto>> getDebtsToMe() {
         List<LegacyDebtResponseDto> debts = debtService.getDebtsByDescription(DEBT_TO_ME_DESCRIPTION);
         return ResponseEntity.ok(debts);
+    }
+
+
+
+    @Operation(summary = "Tarix aralığına görə borc xülasəsi (tarix verilməsə hamısı)")
+    @GetMapping("/summary")
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
+    public ResponseEntity<DebtSummaryResponseDto> getDebtSummary(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+        return ResponseEntity.ok(debtService.getDebtSummary(startDate, endDate));
     }
 }

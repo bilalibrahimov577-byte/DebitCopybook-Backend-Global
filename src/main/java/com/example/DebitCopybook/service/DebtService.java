@@ -15,6 +15,7 @@ import com.example.DebitCopybook.model.mapper.DebtMapper;
 import com.example.DebitCopybook.model.request.DebtRequestDto;
 import com.example.DebitCopybook.model.response.DebtHistoryResponseDto;
 import com.example.DebitCopybook.model.response.DebtResponseDto;
+import com.example.DebitCopybook.model.response.DebtSummaryResponseDto;
 import com.example.DebitCopybook.model.response.LegacyDebtResponseDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
@@ -23,13 +24,18 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
+
+import static com.example.DebitCopybook.constants.DebtConstants.DEBT_TO_ME_DESCRIPTION;
+import static com.example.DebitCopybook.constants.DebtConstants.MY_DEBT_DESCRIPTION;
 
 @Service
 @RequiredArgsConstructor
@@ -41,6 +47,11 @@ public class DebtService {
     private final DebtHistoryRepository debtHistoryRepository;
     private final DebtHistoryMapper debtHistoryMapper;
     private final SubscriptionService subscriptionService;
+
+    private static final ZoneId BAKU_ZONE = ZoneId.of("Asia/Baku");
+    // createdAt bazada serverin vaxtı ilə yazılır (@PrePersist -> LocalDateTime.now()).
+// Render serveri adətən UTC-dir. Serverin zonası fərqlidirsə bunu dəyiş.
+    private static final ZoneId DB_ZONE = ZoneOffset.UTC;
 
     private LegacyDebtResponseDto mapToLegacy(DebtEntity entity) {
         if (entity == null) return null;
@@ -379,5 +390,49 @@ public class DebtService {
         // DƏYİŞDİ: findPersonalDebtsByDescription çağırırıq
         List<DebtEntity> debtEntities = debtRepository.findPersonalDebtsByDescription(userId, description);
         return mapListToLegacy(debtEntities);
+    }
+
+
+
+    public DebtSummaryResponseDto getDebtSummary(LocalDate startDate, LocalDate endDate) {
+        Long userId = getCurrentUserId();
+
+        List<DebtEntity> debts;
+        if (startDate == null && endDate == null) {
+            // Tarix seçilməyibsə hamısı
+            debts = debtRepository.findPersonalDebtsIncludeNull(userId, DebtStatus.SIMPLE);
+        } else if (startDate == null || endDate == null) {
+            throw new IllegalArgumentException("Başlanğıc və son tarix birlikdə göndərilməlidir.");
+        } else {
+            if (startDate.isAfter(endDate)) {
+                throw new IllegalArgumentException("Başlanğıc tarix son tarixdən sonra ola bilməz.");
+            }
+            // Son gün daxildir: [startDate 00:00, endDate+1 00:00)
+            debts = debtRepository.findPersonalDebtsByCreatedAtRange(
+                    userId,
+                    startDate.atStartOfDay(),
+                    endDate.plusDays(1).atStartOfDay());
+        }
+
+        List<DebtEntity> mine = debts.stream()
+                .filter(d -> MY_DEBT_DESCRIPTION.equals(d.getDescription()))
+                .collect(Collectors.toList());
+        List<DebtEntity> toMe = debts.stream()
+                .filter(d -> DEBT_TO_ME_DESCRIPTION.equals(d.getDescription()))
+                .collect(Collectors.toList());
+
+        return DebtSummaryResponseDto.builder()
+                .myDebts(mapListToLegacy(mine))
+                .myDebtsTotal(sum(mine))
+                .debtsToMe(mapListToLegacy(toMe))
+                .debtsToMeTotal(sum(toMe))
+                .build();
+    }
+
+    private BigDecimal sum(List<DebtEntity> list) {
+        return list.stream()
+                .map(DebtEntity::getDebtAmount)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 }
