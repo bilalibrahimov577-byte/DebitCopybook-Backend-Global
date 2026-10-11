@@ -16,7 +16,7 @@ public class DebtRequestDto {
 
     @NotBlank(message = "borcalanın adı boş ola bilməz")
     @Schema(description = "Borcalanın adını daxil eidin məsələn Həsən müəllim")
-    @Size(min =1, max = 25)
+    @Size(min =1, max = 65)
     private String debtorName;
 
 
