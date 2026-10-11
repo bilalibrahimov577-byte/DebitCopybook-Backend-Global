@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -69,5 +70,11 @@ public interface DebtRepository extends JpaRepository<DebtEntity, Long> {
     long countConfirmedSharedDebts(@Param("userId") Long userId);
 
 
+    @Query("SELECT d FROM DebtEntity d WHERE d.user.id = :userId " +
+            "AND (d.status = com.example.DebitCopybook.model.enums.DebtStatus.SIMPLE OR d.status IS NULL) " +
+            "AND d.createdAt >= :from AND d.createdAt < :to")
+    List<DebtEntity> findPersonalDebtsByCreatedAtRange(@Param("userId") Long userId,
+                                                       @Param("from") LocalDateTime from,
+                                                       @Param("to") LocalDateTime to);
 
 }
