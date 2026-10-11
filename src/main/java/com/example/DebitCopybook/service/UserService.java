@@ -10,6 +10,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional; // --> YENİ İMPORT
+import java.security.SecureRandom;
 
 import java.util.HashSet;
 import java.util.Optional;
@@ -26,21 +27,54 @@ public class UserService implements UserDetailsService {
     private String adminEmail;
 
 
+//
+//    private String generateUniqueDebtId() {
+//        Random random = new Random();
+//        while (true) {
+//            int number = random.nextInt(9000) + 1000;
+//            String debtId = String.format("%02d-%02d", number / 100, number % 100);
+//
+//            // Bu ID-nin bazada başqası tərəfindən istifadə olunmadığını yoxlayırıq
+//            if (!userRepository.existsByDebtId(debtId)) {
+//                return debtId; // Əgər ID boşdadırsa, onu qaytarırıq
+//            }
+//            // Əgər ID tutulubsa, dövr (while) davam edir və yeni bir ID yaranır
+//        }
+//    }
+    // --> YENİ KOD BİTDİ
+
+
 
     private String generateUniqueDebtId() {
-        Random random = new Random();
-        while (true) {
+        // Kriptoqrafik cəhətdən daha təhlükəsiz Generator
+        SecureRandom random = new SecureRandom();
+        int maxAttempts = 20;
+
+        // 1. MƏRHƏLƏ: 4 Rəqəmli ID cəhd et (1000 - 9999)
+        for (int i = 0; i < maxAttempts; i++) {
             int number = random.nextInt(9000) + 1000;
             String debtId = String.format("%02d-%02d", number / 100, number % 100);
 
-            // Bu ID-nin bazada başqası tərəfindən istifadə olunmadığını yoxlayırıq
             if (!userRepository.existsByDebtId(debtId)) {
-                return debtId; // Əgər ID boşdadırsa, onu qaytarırıq
+                return debtId;
             }
-            // Əgər ID tutulubsa, dövr (while) davam edir və yeni bir ID yaranır
         }
+
+        // 2. MƏRHƏLƏ: Əgər 20 cəhdə 4 rəqəmli boş ID tapılmadısa (dolubsa), 5 Rəqəmliyə keç (10000 - 99999)
+        for (int i = 0; i < maxAttempts; i++) {
+            int number = random.nextInt(90000) + 10000;
+            // Məsələn: 12345 -> "123-45" formatında
+            String debtId = String.format("%03d-%02d", number / 100, number % 100);
+
+            if (!userRepository.existsByDebtId(debtId)) {
+                return debtId;
+            }
+        }
+
+        // 3. İSTİSNA HALI: Nadir halda həm 4, həm 5 rəqəmlilər dolu olarsa və ya paralel sorğu münaqişəsi olarsa
+        throw new IllegalStateException("Unikal Debt ID yaradıla bilmədi. Xahiş olunur yenidən cəhd edin.");
     }
-    // --> YENİ KOD BİTDİ
+
 
 
     @Transactional // --> BU ANNOTASİYA VACİBDİR!

@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Data
 @NoArgsConstructor
@@ -17,13 +18,23 @@ public class DebtResponseDto {
     private String debtorName;
     private String description;
     private BigDecimal debtAmount;
-
-    private LocalDate createdAt;
-
+    private LocalDateTime createdAt;
     private Integer dueYear;
     private Integer dueMonth;
     private Boolean isFlexibleDueDate;
-
     private String notes;
-    private Long userId;
+
+    // --- BU SAHƏLƏR QARŞILIQLI BORC ÜÇÜN ƏLAVƏ OLUNUR ---
+
+    // Borcun statusunu göstərir (məs: PENDING_APPROVAL, CONFIRMED, SIMPLE)
+    private String status;
+
+    // Sorğunun bitmə vaxtını göstərir (yalnız PENDING_APPROVAL statusunda mənası var)
+    private LocalDateTime requestExpiryTime;
+
+    // Borcu yaradan istifadəçinin məlumatları
+    private UserDto user;
+
+    // Borcun qarşı tərəfinin məlumatları
+    private UserDto counterpartyUser;
 }
