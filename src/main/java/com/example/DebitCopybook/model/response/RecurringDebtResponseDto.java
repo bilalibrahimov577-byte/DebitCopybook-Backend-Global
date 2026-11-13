@@ -32,4 +32,6 @@ public class RecurringDebtResponseDto {
 
     private String notes;
     private LocalDateTime createdAt;
+
+    private LocalDateTime completedAt;   // tam ödənilibsə bağlanma vaxtı, yoxsa null
 }
