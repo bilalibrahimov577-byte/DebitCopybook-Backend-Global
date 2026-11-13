@@ -224,6 +224,7 @@ public class RecurringDebtService {
                 .status(e.getStatus().name())
                 .notes(e.getNotes())
                 .createdAt(e.getCreatedAt())
+                .completedAt(e.getCompletedAt())
                 .build();
     }
 }
