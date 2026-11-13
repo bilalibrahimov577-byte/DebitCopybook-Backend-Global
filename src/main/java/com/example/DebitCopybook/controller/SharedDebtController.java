@@ -4,6 +4,7 @@ import com.example.DebitCopybook.model.request.SharedDebtRequestDto;
 import com.example.DebitCopybook.model.request.SharedDebtResponseRequestDto;
 import com.example.DebitCopybook.model.request.UpdateProposalRequestDto;
 import com.example.DebitCopybook.model.response.DebtResponseDto;
+import com.example.DebitCopybook.model.response.ProposalResponseDto;
 import com.example.DebitCopybook.service.SharedDebtService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -17,7 +18,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("api/v1/shared-debts") // URL-ləri ayırdıq
+@RequestMapping("/api/v1/shared-debts") // URL-ləri ayırdıq
 @RequiredArgsConstructor
 @Tag(
         name = "Qarşılıqlı Borc Controller",
@@ -96,5 +97,22 @@ public class SharedDebtController {
         List<DebtResponseDto> requests = sharedDebtService.getPendingRequestsISent();
         return ResponseEntity.ok(requests);
     }
+
+    @Operation(summary = "Mənə göndərilən və təsdiq gözləyən DƏYİŞİKLİK təkliflərini göstər")
+    @GetMapping("/proposals/incoming")
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
+    public ResponseEntity<List<ProposalResponseDto>> getPendingProposalsForMe() { // <-- Tip dəyişdi
+        List<ProposalResponseDto> proposals = sharedDebtService.getPendingUpdateProposalsForMe();
+        return ResponseEntity.ok(proposals);
+    }
+
+    @Operation(summary = "Mənim göndərdiyim və cavab gözləyən DƏYİŞİKLİK təkliflərini göstər")
+    @GetMapping("/proposals/outgoing")
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
+    public ResponseEntity<List<ProposalResponseDto>> getPendingProposalsISent() { // <-- Tip dəyişdi
+        List<ProposalResponseDto> proposals = sharedDebtService.getPendingUpdateProposalsISent();
+        return ResponseEntity.ok(proposals);
+    }
+
 
 }

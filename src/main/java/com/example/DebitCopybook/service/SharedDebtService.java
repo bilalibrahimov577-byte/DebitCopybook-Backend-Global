@@ -20,15 +20,18 @@ import com.example.DebitCopybook.model.request.SharedDebtRequestDto;
 import com.example.DebitCopybook.model.request.SharedDebtResponseRequestDto;
 import com.example.DebitCopybook.model.request.UpdateProposalRequestDto;
 import com.example.DebitCopybook.model.response.DebtResponseDto;
+import com.example.DebitCopybook.model.response.ProposalResponseDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -39,6 +42,7 @@ public class SharedDebtService {
     private final DebtMapper debtMapper;
     private final DebtUpdateProposalRepository proposalRepository;
     private final DebtHistoryRepository debtHistoryRepository;
+    private final SubscriptionService subscriptionService;
 
 
     // Mövcud DebtService-də olan getCurrentUserId metodunu bura da əlavə edirik.
@@ -50,27 +54,72 @@ public class SharedDebtService {
         return ((UserEntity) authentication.getPrincipal()).getId();
     }
 
-    @Transactional
+
+   @Transactional(noRollbackFor = {UserNotFoundException.class, SecurityException.class})
     public DebtResponseDto createSharedDebtRequest(SharedDebtRequestDto requestDto) {
-        Long requesterId = getCurrentUserId(); // Sorğunu göndərən (Mən)
+        Long requesterId = getCurrentUserId();
         UserEntity requester = userRepository.findById(requesterId)
                 .orElseThrow(() -> new UserNotFoundException("Sorğu göndərən istifadəçi tapılmadı."));
 
-        // 1. Qarşı tərəfi onun borc ID-si ilə tapırıq.
-        UserEntity counterparty = userRepository.findByDebtId(requestDto.getCounterpartyDebtId())
-                .orElseThrow(() -> new UserNotFoundException("'" + requestDto.getCounterpartyDebtId() + "' ID-li istifadəçi tapılmadı."));
 
-        // 2. İstifadəçinin özünə sorğu göndərməsinin qarşısını alırıq.
+        if (requester.getBlockedUntil() != null && requester.getBlockedUntil().isAfter(LocalDateTime.now())) {
+            throw new SecurityException("Çox sayda yanlış cəhd səbəbilə hesabınız müvəqqəti bloklanıb. " +
+                    "Blokun bitmə vaxtı: " + requester.getBlockedUntil());
+        }
+
+
+        long currentDebtCount = debtRepository.countConfirmedSharedDebts(requesterId);
+
+       boolean hasSub = subscriptionService.hasActiveSubscription(requesterId);
+       int limit = (requester.isAdmin() || hasSub) ? 100 : 3;
+        //int limit = requester.isAdmin() ? 100 : 15;
+
+        if (currentDebtCount >= limit) {
+            throw new InvalidRequestException("Siz maksimum borc limitinə (" + limit + ") çatmısınız. " +
+                    "Yeni borc yaratmaq üçün Adminlə əlaqə saxlayın: +994(50)-740-28-09");
+        }
+
+        // 3. QARŞI TƏRƏFİN TAPILMASI (SƏHV ID MƏNTİQİ)
+        Optional<UserEntity> counterpartyOpt = userRepository.findByDebtId(requestDto.getCounterpartyDebtId());
+
+        if (counterpartyOpt.isEmpty()) {
+            // SƏHV ID YAZILIB -> CƏHD SAYINI ARTIR
+            int attempts = requester.getFailedAttempts() + 1;
+            requester.setFailedAttempts(attempts);
+
+            // 5 DƏFƏ SƏHV OLARSA -> 24 SAAT BLOKLA
+            if (attempts >= 5) {
+                requester.setBlockedUntil(LocalDateTime.now().plusHours(24));
+                requester.setFailedAttempts(0); // Sayğacı sıfırla ki, blok bitəndə yenidən başlasın
+                userRepository.save(requester);
+                throw new SecurityException("Yanlış ID daxil etdiyiniz üçün 24 saatlıq bloklandınız.");
+            }
+
+            userRepository.save(requester); // Cəhd sayını yadda saxla
+            throw new UserNotFoundException("Daxil edilən ID (" + requestDto.getCounterpartyDebtId() + ") yanlışdır. Qalan cəhd haqqı: " + (5 - attempts));
+        }
+
+        // ID DÜZGÜNDÜR -> CƏHD SAYINI SIFIRLA
+        if (requester.getFailedAttempts() > 0) {
+            requester.setFailedAttempts(0);
+            userRepository.save(requester);
+        }
+
+        UserEntity counterparty = counterpartyOpt.get();
+
+        // Özünə sorğu göndərmək olmaz
         if (requester.getId().equals(counterparty.getId())) {
             throw new IllegalArgumentException("İstifadəçi özünə borc sorğusu göndərə bilməz.");
         }
 
         // 3. Məlumatları DebtEntity-ə çeviririk.
-
-
-
         DebtRequestDto regularRequestDto = new DebtRequestDto();
-        regularRequestDto.setDebtorName(requestDto.getDebtorName());
+
+        // ===== DƏYİŞİKLİK BURADADIR =====
+        // `debtorName`-i artıq requestDto-dan yox, databazadan tapdığımız `counterparty`-nin adından götürürük!
+        regularRequestDto.setDebtorName(counterparty.getName());
+
+        // Qalan məlumatları köhnəsi kimi requestDto-dan götürürük
         regularRequestDto.setDebtAmount(requestDto.getDebtAmount());
         regularRequestDto.setDescription(requestDto.getDescription());
         regularRequestDto.setNotes(requestDto.getNotes());
@@ -78,65 +127,80 @@ public class SharedDebtService {
         regularRequestDto.setDueMonth(requestDto.getDueMonth());
         regularRequestDto.setIsFlexibleDueDate(requestDto.getIsFlexibleDueDate());
 
-// İndi isə MapStruct-ın bildiyi köhnə metoddan istifadə edirik
         DebtEntity debtEntity = debtMapper.mapRequestDtoToEntity(regularRequestDto);
 
         // --- ƏSAS MƏNTİQ ---
         debtEntity.setUser(requester); // Borcun sahibi (sorğunu göndərən)
         debtEntity.setCounterpartyUser(counterparty); // Borcun ikinci tərəfi
         debtEntity.setStatus(DebtStatus.PENDING_APPROVAL); // Status: TƏSDİQ GÖZLƏYƏN
-        debtEntity.setRequestExpiryTime(LocalDateTime.now(ZoneOffset.ofHours(4)).plusSeconds(120)); // Sorğunun bitmə vaxtı: 120 saniyə sonra
+        debtEntity.setRequestExpiryTime(LocalDateTime.now(ZoneOffset.ofHours(4)).plusSeconds(120));
+        debtEntity.setCreatedAt(LocalDateTime.now(ZoneOffset.ofHours(4)));
 
-        // 4. Bazada yadda saxlayırıq.
+       // 4. Bazada yadda saxlayırıq.
         DebtEntity savedDebt = debtRepository.save(debtEntity);
 
         // 5. Frontend-ə cavab qaytarırıq.
         return debtMapper.mapEntityToResponseDto(savedDebt);
     }
 
-
     @Transactional
     public DebtResponseDto respondToSharedDebtRequest(Long debtId, SharedDebtResponseRequestDto responseDto) {
         Long responderId = getCurrentUserId(); // Cavab verən istifadəçinin ID-si
+
+        // --- YENİ ƏLAVƏ: Limiti yoxlamaq üçün istifadəçi məlumatını çəkirik ---
+        UserEntity responder = userRepository.findById(responderId)
+                .orElseThrow(() -> new UserNotFoundException("İstifadəçi tapılmadı"));
+        // ----------------------------------------------------------------------
 
         // 1. Sorğunu ID-sinə görə bazadan tapırıq.
         DebtEntity debtRequest = debtRepository.findById(debtId)
                 .orElseThrow(() -> new DebtNotFoundException("Bu ID ilə borc sorğusu tapılmadı: " + debtId));
 
-        // 2. ÇOX VACİB YOXLAMALAR:
-        // a) Sorğunun statusu "Təsdiq Gözləyən" olmalıdır.
+        // 2. ÇOX VACİB YOXLAMALAR (Köhnə koddakı kimi):
+        // a) Status yoxlanışı
         if (debtRequest.getStatus() != DebtStatus.PENDING_APPROVAL) {
             throw new InvalidRequestException("Bu sorğuya artıq cavab verilib və ya etibarsızdır.");
         }
 
-        // b) Cavab verən şəxsin, sorğunun göndərildiyi doğru adam olduğunu yoxlayırıq.
+        // b) Kimlik yoxlanışı
         if (!debtRequest.getCounterpartyUser().getId().equals(responderId)) {
             throw new SecurityException("Sizin bu sorğuya cavab vermək üçün icazəniz yoxdur.");
         }
 
-        // c) Sorğunun vaxtının bitib-bitmədiyini yoxlayırıq (120 saniyə).
+        // c) Vaxt yoxlanışı (120 saniyə)
         if (debtRequest.getRequestExpiryTime().isBefore(LocalDateTime.now(ZoneOffset.ofHours(4)))) {
-            // Vaxtı keçmiş sorğunu bazadan silirik ki, "zibil" yığılmasın.
             debtRepository.delete(debtRequest);
             throw new InvalidRequestException("Sorğunun cavab vermə müddəti (120 saniyə) bitib.");
         }
 
-
         // 3. Cavaba görə məntiqi icra edirik.
         if (responseDto.isAccepted()) {
             // --- ƏGƏR SORĞU QƏBUL EDİLİBSƏ ---
-            debtRequest.setStatus(DebtStatus.CONFIRMED); // Statusu "Təsdiqlənmiş" olaraq dəyişirik.
-            debtRequest.setRequestExpiryTime(null); // Bitmə vaxtını silirik, çünki artıq lazımsızdır.
+
+            // ===== YENİ HİSSƏ: LİMİT YOXLAMASI BURADADIR =====
+            // Sən qəbul etməyə çalışırsan, amma əvvəlcə baxaq görək yerin varmı?
+            long currentDebtCount = debtRepository.countConfirmedSharedDebts(responderId);
+            boolean hasSub = subscriptionService.hasActiveSubscription(responderId);
+            int limit = (responder.isAdmin() || hasSub) ? 100 : 3;
+
+          //  int limit = responder.isAdmin() ? 100 : 15;
+
+            if (currentDebtCount >= limit) {
+                // Limit dolubsa, qəbul etməyə icazə vermirik
+                throw new InvalidRequestException("Sizin borc limitiniz (" + limit + ") dolub. " +
+                        "Yeni borc qəbul etmək üçün mövcud borcları bağlamalısan və ya +994(50)-740-28-09 Adminlə əlaqə saxlamalısan.");
+            }
+            // =================================================
+
+            debtRequest.setStatus(DebtStatus.CONFIRMED);
+            debtRequest.setRequestExpiryTime(null);
 
             DebtEntity confirmedDebt = debtRepository.save(debtRequest);
             return debtMapper.mapEntityToResponseDto(confirmedDebt);
         } else {
-            // --- ƏGƏR SORĞU RƏDD EDİLİBSƏ ---
-            // Rədd edilmiş sorğu artıq lazımsızdır, ona görə bazadan tamamilə silirik.
+            // --- ƏGƏR SORĞU RƏDD EDİLİBSƏ (Köhnə koddakı kimi) ---
             debtRepository.delete(debtRequest);
 
-            // Frontend-ə borcun silindiyini bildirmək üçün xüsusi bir cavab qaytarırıq.
-            // Bu, Flutter tərəfdə "Sorğu rədd edildi" mesajını göstərməyə kömək edəcək.
             return DebtResponseDto.builder()
                     .id(debtId)
                     .notes("Sorğu sizin tərəfinizdən rədd edildi və sistemdən silindi.")
@@ -151,23 +215,25 @@ public class SharedDebtService {
         UserEntity proposer = userRepository.findById(proposerId)
                 .orElseThrow(() -> new UserNotFoundException("Təklif göndərən istifadəçi tapılmadı."));
 
-        // 1. Dəyişdirilməsi təklif edilən əsas borcu tapırıq.
         DebtEntity debt = debtRepository.findById(debtId)
                 .orElseThrow(() -> new DebtNotFoundException("Bu ID ilə borc tapılmadı: " + debtId));
 
-        // 2. TƏHLÜKƏSİZLİK YOXLAMALARI
-        // a) Borc mütləq "CONFIRMED" statusunda olmalıdır.
         if (debt.getStatus() != DebtStatus.CONFIRMED) {
             throw new InvalidRequestException("Yalnız təsdiqlənmiş borclar üçün dəyişiklik təklif edilə bilər.");
         }
 
-        // b) Təklifi göndərən şəxs borcun tərəflərindən biri olmalıdır.
         boolean isOwner = debt.getUser().getId().equals(proposerId);
         boolean isCounterparty = debt.getCounterpartyUser().getId().equals(proposerId);
         if (!isOwner && !isCounterparty) {
             throw new SecurityException("Sizin bu borc üçün dəyişiklik təklif etməyə icazəniz yoxdur.");
         }
 
+        // --- YENİ: 3 TƏKLİF LİMİTİ ---
+        long pendingCount = proposalRepository.countPendingProposalsByDebtAndUser(debtId, proposerId, ProposalStatus.PENDING);
+        if (pendingCount >= 3) {
+            throw new InvalidRequestException("Siz bu borc üçün artıq 3 cavablanmamış təklif göndərmisiniz. " +
+                    "Zəhmət olmasa qarşı tərəfin cavab verməsini və ya vaxtın bitməsini (120 san) gözləyin.");
+        }
         // 3. Yeni dəyişiklik təklifi obyektini yaradırıq.
         DebtUpdateProposalEntity proposal = new DebtUpdateProposalEntity();
         proposal.setDebt(debt);
@@ -200,19 +266,19 @@ public class SharedDebtService {
             throw new InvalidRequestException("Bu təklifə artıq cavab verilib və ya etibarsızdır.");
         }
 
-        // b) Cavab verən şəxs, təklifi göndərən şəxs OLMAMALIDIR (yəni qarşı tərəf olmalıdır).
+        // b) Cavab verən şəxs, təklifi göndərən şəxs OLMAMALIDIR.
         if (proposal.getProposerUser().getId().equals(responderId)) {
             throw new SecurityException("İstifadəçi öz təklifini təsdiqləyə bilməz.");
         }
 
-        // c) Cavab verən şəxsin borcun tərəflərindən biri olduğunu bir daha yoxlayırıq.
+        // c) İcazə yoxlanışı.
         boolean isOwner = debt.getUser().getId().equals(responderId);
         boolean isCounterparty = debt.getCounterpartyUser().getId().equals(responderId);
         if (!isOwner && !isCounterparty) {
             throw new SecurityException("Sizin bu təklifə cavab vermək üçün icazəniz yoxdur.");
         }
 
-        // d) Təklifin vaxtının bitib-bitmədiyini yoxlayırıq.
+        // d) Vaxt yoxlanışı (120 saniyə).
         if (proposal.getRequestExpiryTime().isBefore(LocalDateTime.now(ZoneOffset.ofHours(4)))) {
             proposal.setStatus(ProposalStatus.EXPIRED);
             proposalRepository.save(proposal);
@@ -222,18 +288,48 @@ public class SharedDebtService {
         // 3. Cavaba görə məntiqi icra edirik.
         if (responseDto.isAccepted()) {
             // --- ƏGƏR TƏKLİF QƏBUL EDİLİBSƏ ---
-            proposal.setStatus(ProposalStatus.ACCEPTED);
 
-            // Dəyişiklikləri əsas borca tətbiq edirik
-            StringBuilder changesDescription = new StringBuilder("Dəyişikliklər təsdiqləndi: \n");
+            // Dəyişiklikləri əsas borca tətbiq edirik (yadda saxlamamışdan əvvəl)
+            BigDecimal oldAmount = debt.getDebtAmount(); // Tarixçə üçün köhnə məbləğ
 
             if (proposal.getProposedAmount() != null) {
-                changesDescription.append("- Məbləğ ").append(debt.getDebtAmount()).append(" AZN-dən ").append(proposal.getProposedAmount()).append(" AZN-ə dəyişdirildi.\n");
                 debt.setDebtAmount(proposal.getProposedAmount());
             }
             if (proposal.getProposedNotes() != null) {
-                changesDescription.append("- Qeyd '").append(debt.getNotes()).append("'-dan '").append(proposal.getProposedNotes()).append("'-a dəyişdirildi.\n");
                 debt.setNotes(proposal.getProposedNotes());
+            }
+
+            // ===== ƏSAS DƏYİŞİKLİK BURADADIR: 0-A DÜŞƏNDƏ SİLİNMƏ =====
+            // Əgər yeni məbləğ 0 və ya daha azdırsa
+            if (debt.getDebtAmount().compareTo(BigDecimal.ZERO) <= 0) {
+
+                // Təklifin statusunu dəyişirik (texniki olaraq lazımdır, amma onsuz da silinəcək)
+                proposal.setStatus(ProposalStatus.ACCEPTED);
+
+                // Borcu bazadan silirik.
+                // Entity-lərin düzgün qurulubsa, bu əmr ona aid olan History-ni və Proposal-ları da siləcək.
+                debtRepository.delete(debt);
+
+                // Frontend-ə borcun bitdiyini bildirən boş bir cavab qaytarırıq
+                return DebtResponseDto.builder()
+                        .id(debt.getId())
+                        .debtAmount(BigDecimal.ZERO)
+                        .notes("Borc tam ödənildi və sistemdən silindi.")
+                        .build();
+            }
+            // ============================================================
+
+            // Əgər borc 0-dan böyükdürsə, adi qaydada davam edirik:
+            proposal.setStatus(ProposalStatus.ACCEPTED);
+
+            // Tarixçə mətni hazırlayırıq
+            StringBuilder changesDescription = new StringBuilder("Dəyişiklik təsdiqləndi: \n");
+            if (proposal.getProposedAmount() != null) {
+                changesDescription.append("- Məbləğ ").append(oldAmount).append(" AZN-dən ")
+                        .append(proposal.getProposedAmount()).append(" AZN-ə dəyişdirildi.\n");
+            }
+            if (proposal.getProposedNotes() != null) {
+                changesDescription.append("- Qeyd dəyişdirildi.\n");
             }
 
             // Dəyişiklikləri borcun tarixçəsinə yazırıq
@@ -255,11 +351,10 @@ public class SharedDebtService {
             proposal.setStatus(ProposalStatus.REJECTED);
             proposalRepository.save(proposal);
 
-            // Əsas borc dəyişməz qalır. Sadəcə təklifin rədd edildiyini bildiririk.
-            // Frontend-ə mövcud borcun son vəziyyətini qaytarırıq.
             return debtMapper.mapEntityToResponseDto(debt);
         }
     }
+
 
 
     public List<DebtResponseDto> getConfirmedSharedDebts() {
@@ -281,4 +376,44 @@ public class SharedDebtService {
         List<DebtEntity> debts = debtRepository.findPendingRequestsSentByUser(userId);
         return debtMapper.mapEntityListToResponseDtoList(debts);
     }
+
+
+    // --- IMPORTLARI UNUTMA ---
+    // import com.example.DebitCopybook.model.response.ProposalResponseDto;
+
+    // Mənə gələn dəyişiklik təkliflərini gətir
+    public List<ProposalResponseDto> getPendingUpdateProposalsForMe() {
+        Long currentUserId = getCurrentUserId();
+        List<DebtUpdateProposalEntity> entities = proposalRepository.findIncomingProposals(currentUserId, ProposalStatus.PENDING);
+
+        return entities.stream()
+                .map(this::mapProposalEntityToResponseDto) // <-- Mapper dəyişdi
+                .toList();
+    }
+
+    // Mənim göndərdiyim dəyişiklik təkliflərini gətir
+    public List<ProposalResponseDto> getPendingUpdateProposalsISent() {
+        Long currentUserId = getCurrentUserId();
+        List<DebtUpdateProposalEntity> entities = proposalRepository.findOutgoingProposals(currentUserId, ProposalStatus.PENDING);
+
+        return entities.stream()
+                .map(this::mapProposalEntityToResponseDto) // <-- Mapper dəyişdi
+                .toList();
+    }
+
+    // Köməkçi metod: Entity -> Response DTO çevrilməsi
+    private ProposalResponseDto mapProposalEntityToResponseDto(DebtUpdateProposalEntity entity) {
+        return ProposalResponseDto.builder()
+                .id(entity.getId())
+                .debtId(entity.getDebt().getId())
+                .proposerName(entity.getProposerUser().getName()) // Təklifi göndərənin adı
+                .originalAmount(entity.getDebt().getDebtAmount()) // Borcun indiki məbləği
+                .proposedAmount(entity.getProposedAmount())       // Təklif olunan
+                .originalNotes(entity.getDebt().getNotes())       // Borcun indiki qeydi
+                .proposedNotes(entity.getProposedNotes())
+                .requestExpiryTime(entity.getRequestExpiryTime())
+                .build();// Təklif olunan
+
+    }
+
 }

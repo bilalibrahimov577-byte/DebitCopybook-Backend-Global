@@ -71,6 +71,7 @@ dependencies {
 	//MapStruct Processor & MapStruct Core
 	annotationProcessor 'org.mapstruct:mapstruct-processor:1.5.5.Final'
 	implementation 'org.mapstruct:mapstruct:1.5.5.Final'
+	implementation 'com.google.apis:google-api-services-androidpublisher:v3-rev20231115-2.0.0'
 
 
 }

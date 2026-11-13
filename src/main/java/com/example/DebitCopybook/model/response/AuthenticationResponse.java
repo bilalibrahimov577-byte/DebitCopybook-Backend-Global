@@ -1,5 +1,6 @@
 package com.example.DebitCopybook.model.response;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;
 import lombok.Data;
 
@@ -10,5 +11,6 @@ public class AuthenticationResponse {
     private Long userId;
     private String userName;
     private String userEmail;
+    @JsonProperty("userDebtId")
     private String debtId;
 }
